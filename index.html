@@ -198,7 +198,9 @@
   .file-btn { position: relative; overflow: hidden; }
   .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   #reader { width: 100%; max-width: 380px; margin: 12px auto 0; border-radius: 10px; overflow: hidden; }
-  #reader:empty { display: none; }
+  #reader:empty:not(.active) { display: none; }
+  #reader.active { display: block; min-height: 240px; background: #0f1a15; }
+  #reader video { width: 100% !important; height: auto !important; border-radius: 10px; }
 
 
   .btn.danger { background: var(--red); }
@@ -901,6 +903,8 @@ async function startScanner() {
   if (typeof Html5Qrcode === 'undefined') return scanUnavailable('Scanner library failed to load (offline?).');
   if (!window.isSecureContext) return scanUnavailable('Camera needs HTTPS or localhost.');
   clearMsg($('collectMsg'));
+  // The library sizes the preview from #reader's width, so it must be visible before starting
+  $('reader').classList.add('active');
   scanner = scanner || new Html5Qrcode('reader');
   try {
     await scanner.start(
@@ -913,6 +917,7 @@ async function startScanner() {
     setScanLabel('Stop camera');
   } catch (err) {
     scanning = false;
+    $('reader').classList.remove('active');
     $('reader').innerHTML = '';
     const name = err && (err.name || String(err));
     if (/NotAllowed|Permission/i.test(name)) scanUnavailable('Camera permission was denied.');
@@ -926,6 +931,7 @@ async function stopScanner() {
     scanning = false;
     try { await scanner.stop(); scanner.clear(); } catch (e) {}
   }
+  $('reader').classList.remove('active');
   setScanLabel('Scan with camera');
 }
 
