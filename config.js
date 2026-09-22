@@ -1,7 +1,7 @@
 // CleanCare shared-data settings.
 // Leave these blank to run in demo mode (data stays in each browser).
-// Fill them in from Supabase: Project Settings → API.
+// From Supabase: Project Settings → API Keys. Use the publishable key, never a secret key.
 window.CLEANCARE_CONFIG = {
-  supabaseUrl: '',      // e.g. 'https://abcdefghijklm.supabase.co'
-  supabaseAnonKey: '',  // the "anon" / "publishable" key, NOT the service_role key
+  supabaseUrl: 'https://raerqsnupoktngssboeq.supabase.co',
+  supabaseAnonKey: 'sb_publishable_zK4suPLntxXwSGLsW80qCA_V41vUqZ1',
 };
