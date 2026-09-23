@@ -73,6 +73,7 @@
   .btn-reset svg.i { width: 15px; height: 15px; }
 
   .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .net-banner { background: var(--red-light); color: var(--red-ink); border-bottom: 1px solid #fecaca; font-size: 13px; font-weight: 600; text-align: center; padding: 8px 16px; }
   .topbar { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .topbar h1 { margin: 0; font-size: 24px; letter-spacing: -.02em; font-weight: 600; }
   .topbar p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
@@ -368,6 +369,7 @@
   </aside>
 
   <div class="main">
+    <div class="net-banner" id="netBanner" role="status" hidden>You're offline. Changes can't be saved until the connection returns.</div>
     <header class="topbar">
       <div>
         <h1 id="pageTitle">Dashboard</h1>
@@ -678,6 +680,12 @@ function setSync(state, text, sub) {
   $('syncLine').className = 'line' + (state === 'ok' ? '' : ' ' + state);
   $('syncLine').textContent = text;
   $('syncSub').textContent = sub;
+  $('netBanner').hidden = state !== 'err'; // the sidebar status is hidden on phones
+}
+
+function showCantConnect() {
+  $('offlineModal').hidden = false;
+  $('offlineRetry').focus();
 }
 
 async function fetchBags() {
@@ -691,6 +699,8 @@ async function refresh() {
   if (!cloud) return;
   try {
     db.bags = await fetchBags();
+    dataReady = true;
+    $('offlineModal').hidden = true;
     setSync('ok', 'Live · shared', 'Updates sync across all devices');
     render();
   } catch (e) {
@@ -710,12 +720,14 @@ async function startCloud() {
   try {
     db.bags = await fetchBags();
     if (!db.bags.length) await cloudReset();
+    dataReady = true;
     setSync('ok', 'Live · shared', 'Updates sync across all devices');
   } catch (e) {
+    // Leave dataReady false so Track and Facility say "Loading…" rather than "No record found"
     console.error(e);
-    setSync('err', 'Offline', 'Could not reach the server. Check config.js');
+    setSync('err', 'Offline', 'Could not reach the server. Retrying…');
+    showCantConnect();
   }
-  dataReady = true;
   $('footNote').textContent = 'Live demo · data shared by everyone with this link';
   render();
   cloud.channel('bags-changes')
@@ -724,6 +736,7 @@ async function startCloud() {
   // Backstop in case realtime is unavailable on the network
   setInterval(refresh, 20000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  window.addEventListener('online', refresh);
 }
 
 async function cloudReset() {
@@ -1688,10 +1701,9 @@ setRole(VIEWS[role] ? role : 'monitor');
 // If the shared-data setup or its library didn't download, don't quietly fall back to
 // this-device-only demo mode: records saved there would never reach anyone else.
 const cannotConnect = window.__cfgFailed || window.__libFailed || (CFG.supabaseUrl && !window.supabase);
+$('offlineRetry').addEventListener('click', () => (cannotConnect || !dataReady ? location.reload() : refresh()));
 if (cannotConnect) {
-  $('offlineModal').hidden = false;
-  $('offlineRetry').focus();
-  $('offlineRetry').addEventListener('click', () => location.reload());
+  showCantConnect();
   window.addEventListener('online', () => location.reload());
 } else if (cloud) {
   startCloud();
