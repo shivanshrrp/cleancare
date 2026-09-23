@@ -19,6 +19,7 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 | File | What it is |
 | --- | --- |
 | `index.html` | The whole app |
+| `translations.js` | Every piece of interface text, in English, Hindi and Marathi. See *Languages* below |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database table. Run once |
 | `supabase/functions/classify-waste/` | Server function behind "Scan an item": sends the photo to Google Gemini (free tier), or Claude if only `ANTHROPIC_API_KEY` is set. Needs the `GEMINI_API_KEY` secret in Supabase → Edge Functions → Secrets |
@@ -49,6 +50,17 @@ The first time the site opens, it loads the 12 sample bags into the database.
 Live camera scanning works on the live site because GitHub Pages serves it over HTTPS.
 
 To update the site later, commit and `git push`. Pages redeploys automatically.
+
+## Languages
+
+The app is available in English, हिंदी (Hindi) and मराठी (Marathi), chosen from the menu in the header and
+remembered on each device. All interface text lives in `translations.js`, one block per language with the same
+keys; the page uses `t("key")` to look text up and falls back to English for anything missing.
+
+To add a language, copy the `en` block in `translations.js`, give it the language code (e.g. `ta`), translate the
+values and keep the keys and `{placeholders}` as they are. Nothing else needs to change: the language menu lists
+every block automatically. Bag IDs, clinic names, times and typed values are never translated, and printed PDF
+labels stay in English because the PDF fonts can't draw Devanagari.
 
 ## Notes
 
