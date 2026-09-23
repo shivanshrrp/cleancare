@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <style>
@@ -187,6 +188,9 @@
 
   .qr-card { text-align: center; }
   .qr-card .card-head { text-align: left; }
+  .label-actions { display: grid; gap: 8px; margin-top: 14px; }
+  .label-actions .btn { width: 100%; }
+  .qr-card .track-link { width: 100%; margin-top: 8px; }
   .qr-frame { width: 196px; height: 196px; margin: 4px auto 12px; border: 1px dashed #cbd5e1; border-radius: 14px; display: grid; place-items: center; color: var(--slate); background: #fafbfa; }
   .qr-frame.has { border-style: solid; border-color: var(--border); background: #fff; }
   .qr-frame svg.i { width: 40px; height: 40px; stroke-width: 1.5; }
@@ -408,6 +412,10 @@
             <div class="qr-frame" id="qr"></div>
             <div class="qr-id mono" id="qrId"></div>
             <div class="qr-hint" id="qrHint">Save a bag to generate its QR code</div>
+            <div class="label-actions" id="labelActions" hidden>
+              <button class="btn" type="button" id="printLabelBtn"><span data-icon="printer"></span>Print label</button>
+              <button class="btn ghost" type="button" id="downloadLabelBtn"><span data-icon="download"></span>Download PDF</button>
+            </div>
             <a class="btn ghost track-link" id="trackThisBtn" href="#" hidden><span data-icon="route"></span>Track this bag</a>
           </div>
         </div>
@@ -623,6 +631,8 @@ const ICONS = {
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   tick: '<path d="M20 6 9 17l-5-5"/>',
   factory: '<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>',
+  printer: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
 const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -1003,6 +1013,8 @@ function showQr(id) {
   $('trackThisBtn').href = '?track=' + encodeURIComponent(id);
   $('trackThisBtn').dataset.track = id;
   $('trackThisBtn').hidden = false;
+  $('labelActions').dataset.id = id;
+  $('labelActions').hidden = false;
 }
 function clearQr() {
   const box = $('qr');
@@ -1011,6 +1023,7 @@ function clearQr() {
   $('qrId').textContent = '';
   $('qrHint').textContent = 'Save a bag to generate its QR code';
   $('trackThisBtn').hidden = true;
+  $('labelActions').hidden = true;
 }
 
 $('clinicForm').addEventListener('submit', async (e) => {
@@ -1050,6 +1063,110 @@ $('clinicForm').addEventListener('submit', async (e) => {
     setTimeout(() => $('qr').closest('.card').scrollIntoView({ block: 'start' }), 0);
   }
 });
+
+// ---------- printable bag label: visiting-card size, 89 x 51 mm ----------
+const inAndroidApp = /CleanCareAndroid\//.test(navigator.userAgent);
+const APP_DOWNLOAD = 'https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk';
+// Print colours of the actual bag categories (text colour chosen for contrast)
+const LABEL_COLOURS = {
+  Yellow: { fill: [255, 213, 0], text: [23, 35, 29] },
+  Red: { fill: [220, 38, 38], text: [255, 255, 255] },
+  White: { fill: [255, 255, 255], text: [23, 35, 29], border: [148, 163, 184] },
+  Blue: { fill: [29, 99, 214], text: [255, 255, 255] },
+};
+
+function qrDataUrl(text, px) {
+  const holder = document.createElement('div');
+  new QRCode(holder, { text, width: px, height: px, correctLevel: QRCode.CorrectLevel.M });
+  const canvas = holder.querySelector('canvas');
+  return canvas ? canvas.toDataURL('image/png') : holder.querySelector('img').src;
+}
+
+function buildLabelPdf(b) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [51, 89] });
+  const W = 89, H = 51;
+  const teal = [11, 79, 69], ink = [23, 35, 29], muted = [100, 116, 139];
+  const cat = LABEL_COLOURS[b.category] || LABEL_COLOURS.White;
+
+  // Cut guide
+  doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.2);
+  doc.roundedRect(0.6, 0.6, W - 1.2, H - 1.2, 2.5, 2.5, 'S');
+
+  // QR on the left
+  doc.addImage(qrDataUrl(b.id, 440), 'PNG', 4, 4, 37, 37, 'qr', 'FAST'); // 440px = 300 dpi at 37 mm
+
+  // Brand
+  const logo = document.querySelector('.brand-logo');
+  if (logo) doc.addImage(logo.src, 'PNG', 45, 3.6, 6.4, 6.4, 'logo', 'FAST');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.setTextColor(...teal); doc.text('Clean', 52.4, 8.1);
+  doc.setTextColor(67, 160, 71); doc.text('Care', 52.4 + doc.getTextWidth('Clean'), 8.1);
+
+  // Bag ID
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(...muted);
+  doc.text('BAG ID', 45, 14.6);
+  doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(...ink);
+  doc.text(b.id, 45, 19.2);
+
+  // Category stripe in the bag's colour
+  doc.setFillColor(...cat.fill);
+  if (cat.border) { doc.setDrawColor(...cat.border); doc.setLineWidth(0.3); }
+  doc.roundedRect(45, 21.6, 40, 6.2, 1.2, 1.2, cat.border ? 'FD' : 'F');
+  const catText = `${b.category.toUpperCase()}  \u00b7  ${(CAT_DESC[b.category] || '').toUpperCase()}`;
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...cat.text);
+  let size = 6.6; // shrink long names (e.g. "Contaminated plastics") to fit the stripe
+  doc.setFontSize(size);
+  while (doc.getTextWidth(catText) > 36 && size > 4.6) { size -= 0.2; doc.setFontSize(size); }
+  doc.text(catText, 47, 25.6);
+
+  // Clinic, weight, time
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.4); doc.setTextColor(...ink);
+  doc.text(doc.splitTextToSize(clinicName(b.clinic), 40)[0], 45, 32.6);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6.4); doc.setTextColor(...muted);
+  const when = new Date(b.loggedAt).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  doc.text(`${fmtKg(b.weight)} kg  \u00b7  ${when}`, 45, 36.4);
+  doc.setFontSize(5.6);
+  doc.text('Scan the QR code to track this bag', 45, 40.6);
+
+  // Handling band
+  doc.setFillColor(...teal); // rounded at the bottom to follow the card's corners
+  doc.roundedRect(0.6, 44.2, W - 1.2, 5.6, 2.5, 2.5, 'F');
+  doc.rect(0.6, 44.2, W - 1.2, 2.8, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.2); doc.setTextColor(255, 255, 255);
+  doc.text('BIOMEDICAL WASTE  \u00b7  HANDLE WITH CARE', W / 2, 47.9, { align: 'center' });
+
+  doc.setProperties({ title: `CleanCare label ${b.id}`, creator: 'CleanCare' });
+  return doc;
+}
+
+function printLabel(download) {
+  const msg = $('clinicMsg');
+  const id = $('labelActions').dataset.id;
+  const b = db.bags.find((x) => x.id === id);
+  if (!b) return showMsg(msg, 'err', `Bag ${id} isn't in the records any more, so its label can't be printed.`);
+  if (!window.jspdf) return showMsg(msg, 'err', "The PDF tool didn't load. Check your connection and try again.");
+  const doc = buildLabelPdf(b);
+  const name = `CleanCare-label-${b.id}.pdf`;
+
+  if (inAndroidApp) {
+    // The Android app prints through the phone's print screen (which also offers Save as PDF)
+    if (window.CleanCare && typeof window.CleanCare.printPdf === 'function') {
+      window.CleanCare.printPdf(doc.output('datauristring').split(',')[1], name);
+    } else {
+      showMsg(msg, 'warn', `Printing labels needs the latest CleanCare app. Download it from ${APP_DOWNLOAD}`);
+    }
+    return;
+  }
+  if (download) { doc.save(name); return; }
+  doc.autoPrint();
+  const win = window.open(doc.output('bloburl'), '_blank');
+  if (!win) { doc.save(name); showMsg(msg, 'ok', `Pop-ups are blocked, so the label was downloaded as ${name}. Open it to print.`); }
+}
+
+$('printLabelBtn').addEventListener('click', () => printLabel(false));
+$('downloadLabelBtn').addEventListener('click', () => printLabel(true));
+if (inAndroidApp) $('downloadLabelBtn').hidden = true; // the print screen's "Save as PDF" covers this
 
 $('clinicTbody').addEventListener('click', (e) => {
   const a = e.target.closest('a.idlink');
