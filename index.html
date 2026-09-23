@@ -181,7 +181,8 @@
   .btn svg.i { width: 16px; height: 16px; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-  .msg { margin-top: 16px; padding: 11px 14px; border-radius: 10px; display: none; font-size: 13px; font-weight: 500; border: 1px solid transparent; }
+  .msg { margin-top: 16px; padding: 11px 14px; border-radius: 10px; display: none; font-size: 13px; font-weight: 500; border: 1px solid transparent; overflow-wrap: anywhere; text-align: left; }
+  .msg a { color: inherit; font-weight: 600; }
   .msg.ok { display: block; background: #f0fdf4; color: var(--green-ink); border-color: #bbf7d0; }
   .msg.err { display: block; background: #fef2f2; color: var(--red-ink); border-color: #fecaca; }
   .msg.warn { display: block; background: #fffbeb; color: var(--orange-ink); border-color: #fde68a; }
@@ -416,6 +417,7 @@
               <button class="btn" type="button" id="printLabelBtn"><span data-icon="printer"></span>Print label</button>
               <button class="btn ghost" type="button" id="downloadLabelBtn"><span data-icon="download"></span>Download PDF</button>
             </div>
+            <div id="labelMsg" class="msg"></div>
             <a class="btn ghost track-link" id="trackThisBtn" href="#" hidden><span data-icon="route"></span>Track this bag</a>
           </div>
         </div>
@@ -1015,6 +1017,7 @@ function showQr(id) {
   $('trackThisBtn').hidden = false;
   $('labelActions').dataset.id = id;
   $('labelActions').hidden = false;
+  clearMsg($('labelMsg'));
 }
 function clearQr() {
   const box = $('qr');
@@ -1024,6 +1027,7 @@ function clearQr() {
   $('qrHint').textContent = 'Save a bag to generate its QR code';
   $('trackThisBtn').hidden = true;
   $('labelActions').hidden = true;
+  clearMsg($('labelMsg'));
 }
 
 $('clinicForm').addEventListener('submit', async (e) => {
@@ -1141,7 +1145,8 @@ function buildLabelPdf(b) {
 }
 
 function printLabel(download) {
-  const msg = $('clinicMsg');
+  const msg = $('labelMsg');
+  clearMsg(msg);
   const id = $('labelActions').dataset.id;
   const b = db.bags.find((x) => x.id === id);
   if (!b) return showMsg(msg, 'err', `Bag ${id} isn't in the records any more, so its label can't be printed.`);
@@ -1154,7 +1159,8 @@ function printLabel(download) {
     if (window.CleanCare && typeof window.CleanCare.printPdf === 'function') {
       window.CleanCare.printPdf(doc.output('datauristring').split(',')[1], name);
     } else {
-      showMsg(msg, 'warn', `Printing labels needs the latest CleanCare app. Download it from ${APP_DOWNLOAD}`);
+      showMsg(msg, 'warn', 'Printing labels needs the latest CleanCare app. ');
+      msg.insertAdjacentHTML('beforeend', `<a href="${APP_DOWNLOAD}">Download the update</a>`);
     }
     return;
   }
