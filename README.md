@@ -5,7 +5,7 @@ https://shivanshrrp.github.io/cleancare/
 
 | Role | What it does |
 | --- | --- |
-| **Clinic** | Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label |
+| **Clinic** | Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label. **Not sure? Scan an item** photographs a loose item and suggests its bag colour (staff confirm before saving) |
 | **Collector** | Scan or type the bag ID at pickup and record the weight |
 | **Facility** | Record the arrival weight at the treatment facility, then the treatment method and certificate |
 | **Monitor** | Today's counts and exceptions: bags missed at pickup, uncollected after 24 h, or weights more than 10% off |
@@ -21,6 +21,7 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 | `index.html` | The whole app |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database table. Run once |
+| `supabase/functions/classify-waste/` | Server function behind "Scan an item": sends the photo to Google Gemini (free tier), or Claude if only `ANTHROPIC_API_KEY` is set. Needs the `GEMINI_API_KEY` secret in Supabase → Edge Functions → Secrets |
 
 ## 1. Set up the shared database (Supabase, free)
 
