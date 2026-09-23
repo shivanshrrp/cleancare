@@ -1,9 +1,18 @@
 # CleanCare Waste Tracker
 
-Tracks biomedical waste bags in small clinics: the clinic logs and QR-labels each bag, the collector
-scans it at pickup, and the monitor sees exceptions (missed bags, weight mismatches over 10%).
+Tracks biomedical waste bags in small clinics, from the clinic to treatment. Live at
+https://shivanshrrp.github.io/cleancare/
 
-A single static page (`index.html`) with no build step. The data is shared through Supabase.
+| Role | What it does |
+| --- | --- |
+| **Clinic** | Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label |
+| **Collector** | Scan or type the bag ID at pickup and record the weight |
+| **Facility** | Record the arrival weight at the treatment facility, then the treatment method and certificate |
+| **Monitor** | Today's counts and exceptions: bags missed at pickup, uncollected after 24 h, or weights more than 10% off |
+| **Track** | A parcel-style timeline for any bag; links like `?track=CL-ABC-00231` open it directly |
+
+A single static page (`index.html`) with no build step. Data is shared in real time through Supabase.
+There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk
 
 ## Files
 
