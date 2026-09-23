@@ -240,6 +240,21 @@
   .link-btn svg.i { width: 14px; height: 14px; }
   .field em { font-style: normal; font-weight: 400; color: var(--muted); }
 
+  /* ---------- facility view ---------- */
+  .fac-panel { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .fac-bag { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; margin-bottom: 14px; }
+  .fac-bag .track-id { font-size: 17px; }
+  .fac-ref { font-size: 13px; color: var(--muted); margin: -4px 0 14px; }
+  .fac-ref b { color: var(--text); font-weight: 600; }
+  .fac-note { font-size: 13px; padding: 11px 14px; border-radius: 10px; border: 1px solid; }
+  .fac-note.warn { background: #fffbeb; color: var(--orange-ink); border-color: #fde68a; }
+  .fac-note.ok { background: #f0fdf4; color: var(--green-ink); border-color: #bbf7d0; }
+  .queue-label { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .queue-label + div { margin-bottom: 18px; }
+  .queue-label:not(:first-child) { margin-top: 4px; }
+  .list-row[data-fac] { cursor: pointer; }
+  .list-row[data-fac]:hover b { color: var(--green-ink); }
+
 
   .btn.danger { background: var(--red); }
   .btn.danger:hover { background: var(--red-ink); }
@@ -266,9 +281,9 @@
     .side-foot { display: none; }
 
     /* bottom tab bar */
-    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
+    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
     .nav-label { display: none; }
-    .nav-item { position: relative; flex-direction: column; justify-content: center; gap: 3px; margin: 0; padding: 7px 4px; min-height: 52px; font-size: 12px; text-align: center; border-radius: 12px; }
+    .nav-item { position: relative; flex-direction: column; justify-content: center; gap: 3px; margin: 0; padding: 7px 2px; min-height: 52px; font-size: 11px; text-align: center; border-radius: 12px; }
     .nav-item svg.i { width: 22px; height: 22px; }
     .nav-item .txt { flex: none; }
     .nav-item .sub { display: none; }
@@ -339,6 +354,7 @@
       <div class="nav-label">ROLES</div>
       <button class="nav-item" data-role="clinic"><span data-icon="hospital"></span><span class="txt">Clinic<span class="sub">Log &amp; label bags</span></span></button>
       <button class="nav-item" data-role="collector"><span data-icon="truck"></span><span class="txt">Collector<span class="sub">Confirm pickups</span></span><span class="count orange" id="navPending"></span></button>
+      <button class="nav-item" data-role="facility"><span data-icon="factory"></span><span class="txt">Facility<span class="sub">Receive &amp; treat</span></span><span class="count orange" id="navFacility"></span></button>
       <button class="nav-item" data-role="monitor"><span data-icon="dashboard"></span><span class="txt">Monitor<span class="sub">Dashboard &amp; exceptions</span></span><span class="count red" id="navEx"></span></button>
       <button class="nav-item" data-role="track"><span data-icon="route"></span><span class="txt">Track<span class="sub">Follow a bag's journey</span></span></button>
     </nav>
@@ -478,6 +494,42 @@
         </div>
       </section>
 
+      <!-- FACILITY -->
+      <section id="view-facility" hidden>
+        <div class="grid-main stack">
+          <div class="card">
+            <div class="card-head"><div><h2>Receive or treat a bag</h2><p>Scan each bag when it arrives, and again once it has been treated</p></div></div>
+            <div class="scan-panel">
+              <div class="top">
+                <div class="actions">
+                  <button class="btn ghost" type="button" id="facScanBtn"><span data-icon="camera"></span><span>Scan with camera</span></button>
+                  <label class="btn ghost file-btn"><span data-icon="image"></span>Scan from photo<input type="file" accept="image/*" id="facScanFile" data-scan="facility"></label>
+                </div>
+                <span>Manual entry always works</span>
+              </div>
+              <div id="facReader" class="reader"></div>
+            </div>
+            <form id="facLookupForm" class="track-form" novalidate>
+              <label class="field"><span>Bag ID</span><input id="facId" type="text" class="mono" placeholder="CL-XXX-00000" autocomplete="off" autocapitalize="characters"></label>
+              <button class="btn" type="submit"><span data-icon="search"></span>Look up</button>
+            </form>
+            <div id="facMsg" class="msg"></div>
+            <div id="facPanel" class="fac-panel" hidden></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Work queue</h2><p>Tap a bag to open it</p></div></div>
+            <div id="facQueue"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Treated today</h2><p>Bags whose treatment was recorded today</p></div><span class="pill green" id="treatedCount"></span></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Bag ID</th><th>Clinic</th><th>Category</th><th class="num">Arrival kg</th><th>Method</th><th>Certificate</th><th>Treated</th></tr></thead>
+            <tbody id="treatedTbody"></tbody>
+          </table></div>
+        </div>
+      </section>
+
       <!-- TRACK -->
       <section id="view-track" hidden>
         <div class="card">
@@ -520,6 +572,15 @@
 const STORE_KEY = 'bmw-demo-v1';
 const ROLE_KEY = 'bmw-demo-role';
 const COLLECTOR_KEY = 'cleancare-collector-id';
+const FACILITY_KEY = 'cleancare-facility-name';
+const DEFAULT_FACILITY = 'City CBWTF';
+// Treatment options, with the usual route for each bag colour under the BMW Management Rules, 2016
+const TREATMENTS = [
+  'Incineration', 'Plasma pyrolysis', 'Deep burial',
+  'Autoclave + shredding', 'Microwave + shredding', 'Hydroclave + shredding',
+  'Disinfection + recycling', 'Encapsulation',
+];
+const DEFAULT_TREATMENT = { Yellow: 'Incineration', Red: 'Autoclave + shredding', White: 'Autoclave + shredding', Blue: 'Disinfection + recycling' };
 const CLINICS = [
   { code: 'CCC', name: 'City Care Clinic' },
   { code: 'MSD', name: 'Mediscan Diagnostics' },
@@ -551,6 +612,7 @@ const ICONS = {
   route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   tick: '<path d="M20 6 9 17l-5-5"/>',
+  factory: '<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
 const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -677,6 +739,33 @@ async function addBag(bag) {
 }
 
 // Returns the updated bag, or null if another device collected it first
+// Facility steps. Each returns the updated bag, or null if another device got there first.
+async function receiveBag(bag, weight, facility) {
+  const patch = { receivedAt: new Date().toISOString(), receivedWeight: weight, facility };
+  if (!cloud) { Object.assign(bag, patch); save(); return bag; }
+  const { data, error } = await cloud.from('bags')
+    .update({ received_at: patch.receivedAt, received_weight: weight, facility })
+    .eq('id', bag.id).eq('status', 'collected').is('received_at', null)
+    .select();
+  if (error) throw error;
+  if (!data.length) return null;
+  Object.assign(bag, fromRow(data[0]));
+  return bag;
+}
+
+async function treatBag(bag, method, certificateRef) {
+  const patch = { treatedAt: new Date().toISOString(), treatmentMethod: method, certificateRef };
+  if (!cloud) { Object.assign(bag, patch); save(); return bag; }
+  const { data, error } = await cloud.from('bags')
+    .update({ treated_at: patch.treatedAt, treatment_method: method, certificate_ref: certificateRef })
+    .eq('id', bag.id).not('received_at', 'is', null).is('treated_at', null)
+    .select();
+  if (error) throw error;
+  if (!data.length) return null;
+  Object.assign(bag, fromRow(data[0]));
+  return bag;
+}
+
 async function collectBag(bag, weight, collectorId = null) {
   const patch = { status: 'collected', collectorWeight: weight, collectedAt: new Date().toISOString(), collectorId };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
@@ -821,6 +910,12 @@ function bagFlags(b, now = Date.now()) {
   if (b.collectorWeight != null && Math.abs(diff) > WEIGHT_TOLERANCE) {
     flags.weight = `Weight ${diff > 0 ? '+' : ''}${(diff * 100).toFixed(0)}% vs clinic (${fmtKg(b.weight)} → ${fmtKg(b.collectorWeight)} kg)`;
   }
+  if (b.receivedWeight != null && b.collectorWeight) {
+    const d = (b.receivedWeight - b.collectorWeight) / b.collectorWeight;
+    if (Math.abs(d) > WEIGHT_TOLERANCE) {
+      flags.arrival = `Arrival weight ${d > 0 ? '+' : ''}${(d * 100).toFixed(0)}% vs pickup (${fmtKg(b.collectorWeight)} → ${fmtKg(b.receivedWeight)} kg)`;
+    }
+  }
   if (b.status === 'logged') {
     const age = now - Date.parse(b.loggedAt);
     const pickup = lastPickupAt(b.clinic, now);
@@ -835,6 +930,7 @@ const VIEWS = {
   clinic:    { title: 'Clinic', sub: 'Log waste bags and print QR labels', who: 'Clinic staff', init: 'CL' },
   collector: { title: 'Collector', sub: 'Scan or enter bag IDs to confirm pickup', who: 'Waste collector', init: 'CO' },
   monitor:   { title: 'Monitor', sub: "Today's collection status and exceptions", who: 'Monitoring officer', init: 'MO' },
+  facility:  { title: 'Facility', sub: 'Receive collected bags and record their treatment', who: 'Treatment facility', init: 'TF' },
   track:     { title: 'Track', sub: 'Follow a bag from the clinic to treatment', who: 'Bag tracking', init: 'TR' },
 };
 let role = 'monitor';
@@ -1037,6 +1133,10 @@ function renderCollector() {
 // ---------- camera scanning (html5-qrcode), manual entry stays as fallback ----------
 // Collector and Track each have their own viewfinder; only one camera runs at a time.
 const SCAN = {
+  facility: {
+    reader: 'facReader', btn: 'facScanBtn', msg: 'facMsg', input: 'facId',
+    onId(id) { openFacility(id); },
+  },
   collector: {
     reader: 'reader', btn: 'scanBtn', msg: 'collectMsg', input: 'collectId',
     onId(id) {
@@ -1139,6 +1239,7 @@ function exceptions() {
     if (f.overdue) out.push({ bag: b, type: 'overdue', issue: f.overdue.replace('Overdue: n', 'N') });
     if (f.missed) out.push({ bag: b, type: 'missed', issue: f.missed });
     if (f.weight) out.push({ bag: b, type: 'weight', issue: f.weight.replace(/ \(.*\)$/, '') });
+    if (f.arrival) out.push({ bag: b, type: 'weight', issue: f.arrival.replace(/ \(.*\)$/, '') });
   }
   return out;
 }
@@ -1267,7 +1368,7 @@ function journey(b) {
     detail: b.vehicleId ? `Vehicle ${b.vehicleId}` : b.collectorId ? `With collector ${b.collectorId}` : 'Vehicle not recorded',
   } : { label: 'In transit', state: 'pending' });
   steps.push(b.receivedAt ? {
-    label: 'Received at treatment facility', state: 'done', time: b.receivedAt,
+    label: 'Received at treatment facility', state: f.arrival ? 'flag' : 'done', time: b.receivedAt, reason: f.arrival,
     detail: `${b.receivedWeight != null ? fmtKg(b.receivedWeight) + ' kg on arrival' : 'Arrival weight not recorded'}${b.facility ? ' · ' + b.facility : ''}`,
   } : { label: 'Received at treatment facility', state: 'pending' });
   steps.push(b.treatedAt ? {
@@ -1275,7 +1376,7 @@ function journey(b) {
     detail: `${b.treatmentMethod || 'Method not recorded'}${b.certificateRef ? ' · Certificate ' + b.certificateRef : ''}`,
   } : { label: 'Treated', state: 'pending' });
 
-  const status = f.weight ? ['red', 'Exception'] : (f.overdue || f.missed) ? ['orange', 'Delayed'] : ['green', 'On track'];
+  const status = (f.weight || f.arrival) ? ['red', 'Exception'] : (f.overdue || f.missed) ? ['orange', 'Delayed'] : ['green', 'On track'];
   const reached = steps.filter((st) => st.time).length; // only steps that actually happened
   return { steps, status, stage: steps[reached - 1].label, reached };
 }
@@ -1333,11 +1434,169 @@ function renderTrack() {
   });
 }
 
+// ---------- facility view ----------
+let facBagId = null;
+const facilityStage = (b) => (b.status !== 'collected' ? 'awaiting pickup' : !b.receivedAt ? 'awaiting receipt' : !b.treatedAt ? 'awaiting treatment' : 'treated');
+
+function openFacility(id) {
+  facBagId = normId(id);
+  $('facId').value = facBagId;
+  clearMsg($('facMsg'));
+  if (role !== 'facility') setRole('facility'); else render();
+  const first = $('facPanel').querySelector('input, select');
+  if (first) first.focus();
+}
+
+$('facLookupForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const raw = $('facId').value.trim();
+  if (!raw) { facBagId = null; render(); return showMsg($('facMsg'), 'err', 'Enter or scan a bag ID.'); }
+  openFacility(raw);
+});
+
+$('facQueue').addEventListener('click', (e) => {
+  const row = e.target.closest('[data-fac]');
+  if (row) openFacility(row.dataset.fac);
+});
+
+function rememberedFacility() {
+  try { return localStorage.getItem(FACILITY_KEY) || DEFAULT_FACILITY; } catch (e) { return DEFAULT_FACILITY; }
+}
+
+function renderFacPanel() {
+  const panel = $('facPanel');
+  if (!facBagId) { panel.hidden = true; panel.dataset.key = ''; return; }
+  panel.hidden = false;
+  const b = dataReady ? db.bags.find((x) => x.id === facBagId) : null;
+  // Other devices' updates re-render the view; keep a half-filled form unless this bag's stage changed
+  const key = !dataReady ? 'loading' : b ? `${b.id}|${facilityStage(b)}` : `${facBagId}|missing`;
+  if (panel.dataset.key === key) return;
+  panel.dataset.key = key;
+  if (!dataReady) { panel.innerHTML = `<div class="track-empty"><b>Loading…</b>Fetching the latest records</div>`; return; }
+  if (!b) {
+    panel.innerHTML = `<div class="track-empty"><b>No record found for this bag ID</b><span class="mono">${esc(facBagId)}</span> isn't in the records. Check the label and try again.</div>`;
+    return;
+  }
+  const stage = facilityStage(b);
+  const head = `
+    <div class="fac-bag">
+      <div>
+        <div class="track-id">${esc(b.id)}</div>
+        <div class="track-meta">
+          <span class="cat-badge ${esc(b.category)}"><span class="dot ${esc(b.category)}"></span>${esc(CATEGORIES[b.category] || b.category)}</span>
+          <span>${esc(clinicName(b.clinic))}</span>
+        </div>
+      </div>
+      <span class="pill ${stage === 'treated' ? 'green' : 'orange'}" style="text-transform:capitalize">${esc(stage)}</span>
+    </div>`;
+  let body;
+  if (stage === 'awaiting pickup') {
+    body = `<div class="fac-note warn">This bag hasn't been collected yet, so it can't be received. The collector must confirm the pickup first.</div>`;
+  } else if (stage === 'awaiting receipt') {
+    body = `
+      <div class="fac-ref">Collected <b>${fmtDateTime(b.collectedAt)}</b> · <b>${fmtKg(b.collectorWeight)} kg</b> at pickup${b.collectorId ? ' by ' + esc(b.collectorId) : ''}</div>
+      <form id="receiveForm" novalidate>
+        <div class="form-row">
+          <label class="field"><span>Weight on arrival (kg)</span><input id="facWeight" type="number" step="0.01" min="0" inputmode="decimal" placeholder="e.g. ${fmtKg(b.collectorWeight)}"></label>
+          <label class="field"><span>Treatment facility</span><input id="facName" type="text" value="${esc(rememberedFacility())}" autocomplete="off"></label>
+        </div>
+        <div class="actions"><button class="btn" type="submit"><span data-icon="check"></span>Confirm receipt</button></div>
+      </form>`;
+  } else if (stage === 'awaiting treatment') {
+    const def = DEFAULT_TREATMENT[b.category];
+    body = `
+      <div class="fac-ref">Received <b>${fmtDateTime(b.receivedAt)}</b> · <b>${b.receivedWeight != null ? fmtKg(b.receivedWeight) + ' kg' : 'weight not recorded'}</b>${b.facility ? ' at ' + esc(b.facility) : ''}</div>
+      <form id="treatForm" novalidate>
+        <div class="form-row">
+          <label class="field"><span>Treatment method</span><select id="facMethod">${TREATMENTS.map((m) => `<option${m === def ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>
+          <label class="field"><span>Certificate reference <em>(optional)</em></span><input id="facCert" type="text" placeholder="e.g. CBWTF-TC-40331" autocomplete="off" autocapitalize="characters"></label>
+        </div>
+        <div class="actions"><button class="btn" type="submit"><span data-icon="check"></span>Confirm treatment</button></div>
+      </form>`;
+  } else {
+    body = `<div class="fac-note ok">Treated ${fmtDateTime(b.treatedAt)} · ${esc(b.treatmentMethod || 'method not recorded')}${b.certificateRef ? ' · Certificate ' + esc(b.certificateRef) : ''}. Nothing left to record.</div>`;
+  }
+  body += `<div class="actions" style="margin-top:12px"><a class="btn ghost" href="?track=${encodeURIComponent(b.id)}" data-track="${esc(b.id)}"><span data-icon="route"></span>View timeline</a></div>`;
+  panel.innerHTML = head + body;
+  paintIcons(panel);
+}
+
+$('facPanel').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type=submit]');
+  if (btn.disabled) return;
+  const msg = $('facMsg');
+  const b = db.bags.find((x) => x.id === facBagId);
+  if (!b) return;
+  if (form.id === 'receiveForm') {
+    const w = parseWeight($('facWeight').value);
+    const facility = $('facName').value.trim();
+    if (w.blank) return showMsg(msg, 'err', 'Weight is blank. Weigh the bag on arrival and enter the weight in kg.');
+    if (w.invalid) return showMsg(msg, 'err', 'Weight must be a number greater than 0.');
+    if (!facility) return showMsg(msg, 'err', 'Enter the treatment facility name.');
+    try { localStorage.setItem(FACILITY_KEY, facility); } catch (err) {}
+    btn.disabled = true;
+    let done;
+    try { done = await receiveBag(b, w.value, facility); }
+    catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', 'Could not record the receipt. Check your connection and try again.'); }
+    if (!done) { await refresh(); render(); return showMsg(msg, 'err', `${b.id} was already received on another device.`); }
+    const f = bagFlags(b);
+    if (f.arrival) {
+      const d = (b.receivedWeight - b.collectorWeight) / b.collectorWeight;
+      showMsg(msg, 'warn', `Received ${b.id}, but it weighs ${Math.abs(d * 100).toFixed(0)}% ${d > 0 ? 'more' : 'less'} than at pickup (${fmtKg(b.collectorWeight)} → ${fmtKg(b.receivedWeight)} kg). Flagged for review.`);
+    }
+    else showMsg(msg, 'ok', `Received ${b.id} at ${facility}. Record the treatment once it's done.`);
+  } else if (form.id === 'treatForm') {
+    const method = $('facMethod').value;
+    const cert = $('facCert').value.trim().toUpperCase() || null;
+    btn.disabled = true;
+    let done;
+    try { done = await treatBag(b, method, cert); }
+    catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', 'Could not record the treatment. Check your connection and try again.'); }
+    if (!done) { await refresh(); render(); return showMsg(msg, 'err', `${b.id}'s treatment was already recorded on another device.`); }
+    showMsg(msg, 'ok', `Treatment recorded for ${b.id}: ${method}${cert ? ' · Certificate ' + cert : ''}. Its journey is complete.`);
+  }
+  render();
+});
+
+function renderFacility() {
+  renderFacPanel();
+  const receipt = db.bags.filter((b) => facilityStage(b) === 'awaiting receipt').sort((a, b) => a.collectedAt.localeCompare(b.collectedAt));
+  const treat = db.bags.filter((b) => facilityStage(b) === 'awaiting treatment').sort((a, b) => a.receivedAt.localeCompare(b.receivedAt));
+  const row = (b, kg, time) => `
+    <div class="list-row" data-fac="${esc(b.id)}" title="Open this bag">
+      <span class="dot ${esc(b.category)}"></span>
+      <div class="body"><b class="mono">${esc(b.id)}</b><small>${esc(clinicName(b.clinic))}</small></div>
+      <div class="right"><b>${fmtKg(kg)} kg</b><small>${fmtTime(time)}</small></div>
+    </div>`;
+  $('facQueue').innerHTML = `
+    <div class="queue-label"><span>Awaiting receipt</span><span>${receipt.length}</span></div>
+    <div>${receipt.length ? receipt.map((b) => row(b, b.collectorWeight, b.collectedAt)).join('') : '<div class="empty">Nothing on its way.</div>'}</div>
+    <div class="queue-label"><span>Awaiting treatment</span><span>${treat.length}</span></div>
+    <div>${treat.length ? treat.map((b) => row(b, b.receivedWeight, b.receivedAt)).join('') : '<div class="empty">Nothing waiting.</div>'}</div>`;
+
+  const treated = db.bags.filter((b) => b.treatedAt && isToday(b.treatedAt)).sort((a, b) => b.treatedAt.localeCompare(a.treatedAt));
+  $('treatedCount').textContent = `${plural(treated.length, 'bag')} · ${sumKg(treated, 'receivedWeight').toFixed(1)} kg`;
+  $('treatedTbody').innerHTML = treated.length ? treated.map((b) => `
+    <tr>
+      <td class="mono"><a class="idlink" href="?track=${encodeURIComponent(b.id)}" data-track="${esc(b.id)}" title="Track this bag">${esc(b.id)}</a></td>
+      <td>${esc(clinicName(b.clinic))}</td>
+      <td>${catCell(b.category)}</td>
+      <td class="num">${fmtKg(b.receivedWeight)}</td>
+      <td>${esc(b.treatmentMethod || '—')}</td>
+      <td class="mono">${esc(b.certificateRef || '—')}</td>
+      <td>${fmtTime(b.treatedAt)}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">No treatments recorded today.</td></tr>`;
+}
+
 function renderBadges() {
   const pending = db.bags.filter((b) => b.status === 'logged').length;
   const ex = exceptions().length;
   $('navPending').textContent = pending || '';
   $('navEx').textContent = ex || '';
+  const fac = db.bags.filter((b) => b.status === 'collected' && !b.treatedAt).length;
+  $('navFacility').textContent = fac || '';
 }
 
 // ---------- reset & init ----------
@@ -1367,6 +1626,8 @@ async function resetDemo() {
   clearMsg($('clinicMsg'));
   clearMsg($('collectMsg'));
   clearMsg($('trackMsg'));
+  clearMsg($('facMsg'));
+  facBagId = null;
   render();
 }
 $('resetBtn').addEventListener('click', openReset);
@@ -1382,6 +1643,7 @@ if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
     || (camPolicy && camPolicy.allowsFeature && !camPolicy.allowsFeature('camera'))) {
   $('scanBtn').hidden = true;
   $('trackScanBtn').hidden = true;
+  $('facScanBtn').hidden = true;
 }
 
 function labelCells() {
@@ -1398,6 +1660,7 @@ function render() {
   if (role === 'clinic') renderClinic();
   else if (role === 'collector') renderCollector();
   else if (role === 'track') renderTrack();
+  else if (role === 'facility') renderFacility();
   else renderMonitor();
   labelCells();
 }
