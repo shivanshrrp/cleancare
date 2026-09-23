@@ -9,7 +9,9 @@
 // otherwise Anthropic Claude via ANTHROPIC_API_KEY. Set one in Supabase -> Edge Functions -> Secrets.
 // Note: on Gemini's free tier, Google may use requests to improve its products.
 
-const GEMINI_MODEL = "gemini-3.7-flash";
+// Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
+// 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
+const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "http://localhost:8765"];
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -80,36 +82,38 @@ Deno.serve(async (req) => {
   }
 });
 
-// Google Gemini, Interactions API
+// Google Gemini, generateContent API. Moves on to the next model when one is busy or rate-limited.
 async function askGemini(apiKey: string, image: string, mediaType: string): Promise<string> {
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
-    body: JSON.stringify({
-      model: GEMINI_MODEL,
-      input: [
-        { type: "image", data: image, mime_type: mediaType },
-        { type: "text", text: PROMPT },
-      ],
-      // Thinking counts toward max_output_tokens on Gemini 3.x, so keep it low and leave headroom
-      generation_config: { thinking_level: "low", max_output_tokens: 1024 },
-      store: false,
-    }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || body.errors?.length) {
-    throw new Error(`Gemini API error ${res.status} ${JSON.stringify(body.errors ?? body.error ?? body)}`);
+  let lastError = "";
+  for (const model of GEMINI_MODELS) {
+    const started = Date.now();
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: mediaType, data: image } },
+            { text: PROMPT },
+          ],
+        }],
+        // Minimal thinking keeps replies quick. Thinking still counts toward maxOutputTokens
+        // on Gemini 3.x, so leave headroom beyond the one-line answer.
+        generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "minimal" } },
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    console.log(`Gemini ${model} answered in ${Date.now() - started} ms (HTTP ${res.status})`);
+    if (res.ok) {
+      type Part = { text?: string; thought?: boolean };
+      const parts: Part[] = body.candidates?.[0]?.content?.parts ?? [];
+      return parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("").trim();
+    }
+    lastError = `Gemini ${model} error ${res.status} ${JSON.stringify(body.error ?? body)}`;
+    if (res.status !== 429 && res.status !== 503) break; // only busy/limit errors are worth another model
   }
-  type Block = { type?: string; text?: string };
-  type Step = { type?: string; content?: Block[] };
-  const text = ((body.steps ?? []) as Step[])
-    .filter((st) => st.type === "model_output")
-    .flatMap((st) => st.content ?? [])
-    .filter((b) => b.type === "text" && b.text)
-    .map((b) => b.text)
-    .join("")
-    .trim();
-  return text || (typeof body.output_text === "string" ? body.output_text.trim() : "");
+  throw new Error(lastError);
 }
 
 // Anthropic Claude, Messages API
