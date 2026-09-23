@@ -1,13 +1,16 @@
 // CleanCare "Not sure? Scan an item": suggests a CPCB bag colour for a photographed item.
 //
-// Runs on Supabase so the Anthropic API key stays server-side (the web app is public).
+// Runs on Supabase so the AI provider's API key stays server-side (the web app is public).
 // The browser sends { image: <base64 JPEG/PNG/WebP>, mediaType }, and gets back { text } in the
 // format "ITEM: ... | CATEGORY: ... | REASON: ...". The web app parses it and only ever
 // *suggests* a colour: staff confirm before anything is logged.
 //
-// Secret required:  supabase secrets set ANTHROPIC_API_KEY=... --project-ref <ref>
+// Provider: Google Gemini (free tier) when the GEMINI_API_KEY secret is set,
+// otherwise Anthropic Claude via ANTHROPIC_API_KEY. Set one in Supabase -> Edge Functions -> Secrets.
+// Note: on Gemini's free tier, Google may use requests to improve its products.
 
-const MODEL = "claude-sonnet-4-6";
+const GEMINI_MODEL = "gemini-3.7-flash";
+const CLAUDE_MODEL = "claude-sonnet-4-6";
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "http://localhost:8765"];
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BASE64_CHARS = 3_000_000; // ~2.2 MB image; the app sends ~100-300 KB
@@ -50,8 +53,9 @@ Deno.serve(async (req) => {
   hits.push(now);
   recent.set(ip, hits);
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return reply({ error: "ANTHROPIC_API_KEY is not set" }, 503);
+  const geminiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+  const claudeKey = Deno.env.get("ANTHROPIC_API_KEY")?.trim();
+  if (!geminiKey && !claudeKey) return reply({ error: "Set GEMINI_API_KEY or ANTHROPIC_API_KEY" }, 503);
 
   let image: string, mediaType: string;
   try {
@@ -64,6 +68,52 @@ Deno.serve(async (req) => {
   }
   if (!MEDIA_TYPES.includes(mediaType)) return reply({ error: `mediaType must be one of ${MEDIA_TYPES.join(", ")}` }, 400);
 
+  try {
+    const text = geminiKey
+      ? await askGemini(geminiKey, image, mediaType)
+      : await askClaude(claudeKey!, image, mediaType);
+    if (!text) return reply({ error: "Empty AI reply" }, 502);
+    return reply({ text });
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    return reply({ error: "AI service error" }, 502);
+  }
+});
+
+// Google Gemini, Interactions API
+async function askGemini(apiKey: string, image: string, mediaType: string): Promise<string> {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+    body: JSON.stringify({
+      model: GEMINI_MODEL,
+      input: [
+        { type: "image", data: image, mime_type: mediaType },
+        { type: "text", text: PROMPT },
+      ],
+      // Thinking counts toward max_output_tokens on Gemini 3.x, so keep it low and leave headroom
+      generation_config: { thinking_level: "low", max_output_tokens: 1024 },
+      store: false,
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.errors?.length) {
+    throw new Error(`Gemini API error ${res.status} ${JSON.stringify(body.errors ?? body.error ?? body)}`);
+  }
+  type Block = { type?: string; text?: string };
+  type Step = { type?: string; content?: Block[] };
+  const text = ((body.steps ?? []) as Step[])
+    .filter((st) => st.type === "model_output")
+    .flatMap((st) => st.content ?? [])
+    .filter((b) => b.type === "text" && b.text)
+    .map((b) => b.text)
+    .join("")
+    .trim();
+  return text || (typeof body.output_text === "string" ? body.output_text.trim() : "");
+}
+
+// Anthropic Claude, Messages API
+async function askClaude(apiKey: string, image: string, mediaType: string): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -72,7 +122,7 @@ Deno.serve(async (req) => {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: CLAUDE_MODEL,
       max_tokens: 300,
       messages: [{
         role: "user",
@@ -83,17 +133,12 @@ Deno.serve(async (req) => {
       }],
     }),
   });
-
-  if (!res.ok) {
-    console.error("Anthropic API error", res.status, await res.text());
-    return reply({ error: "AI service error" }, 502);
-  }
+  if (!res.ok) throw new Error(`Anthropic API error ${res.status} ${await res.text()}`);
   const message = await res.json();
-  if (message.stop_reason === "refusal") return reply({ error: "The AI declined this image" }, 422);
-  const text = (message.content ?? [])
+  if (message.stop_reason === "refusal") throw new Error("Claude declined this image");
+  return (message.content ?? [])
     .filter((b: { type: string }) => b.type === "text")
     .map((b: { text: string }) => b.text)
     .join("")
     .trim();
-  return reply({ text });
-});
+}
