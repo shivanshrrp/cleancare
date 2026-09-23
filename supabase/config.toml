@@ -1,0 +1,6 @@
+# Only used to deploy the edge function: supabase functions deploy classify-waste --project-ref raerqsnupoktngssboeq
+project_id = "raerqsnupoktngssboeq"
+
+[functions.classify-waste]
+# Public page, no user sign-in: the function checks the page origin and rate-limits instead
+verify_jwt = false

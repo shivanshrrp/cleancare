@@ -43,3 +43,7 @@ alter table public.bags
   add column if not exists treated_at       timestamptz,
   add column if not exists treatment_method text,
   add column if not exists certificate_ref  text;
+
+-- How the bag colour was chosen at the clinic: 'camera-assisted' or 'manual' (display only). Safe to re-run.
+alter table public.bags
+  add column if not exists selection_method text check (selection_method in ('camera-assisted', 'manual'));
