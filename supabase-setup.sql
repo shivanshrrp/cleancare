@@ -31,3 +31,15 @@ begin
   alter publication supabase_realtime add table public.bags;
 exception when duplicate_object then null;
 end $$;
+
+-- Journey stages after pickup (optional; older bags leave them empty). Safe to re-run.
+alter table public.bags
+  add column if not exists collector_id     text,
+  add column if not exists vehicle_id       text,
+  add column if not exists in_transit_at    timestamptz,
+  add column if not exists received_at      timestamptz,
+  add column if not exists received_weight  numeric(8, 2) check (received_weight > 0),
+  add column if not exists facility         text,
+  add column if not exists treated_at       timestamptz,
+  add column if not exists treatment_method text,
+  add column if not exists certificate_ref  text;

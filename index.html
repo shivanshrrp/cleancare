@@ -197,10 +197,48 @@
   .scan-panel .top > span { font-size: 12px; color: var(--muted); }
   .file-btn { position: relative; overflow: hidden; }
   .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  #reader { width: 100%; max-width: 380px; margin: 12px auto 0; border-radius: 10px; overflow: hidden; }
-  #reader:empty:not(.active) { display: none; }
-  #reader.active { display: block; min-height: 240px; background: #0f1a15; }
-  #reader video { width: 100% !important; height: auto !important; border-radius: 10px; }
+  .reader { width: 100%; max-width: 380px; margin: 12px auto 0; border-radius: 10px; overflow: hidden; }
+  .reader:empty:not(.active) { display: none; }
+  .reader.active { display: block; min-height: 240px; background: #0f1a15; }
+  .reader video { width: 100% !important; height: auto !important; border-radius: 10px; }
+
+  /* ---------- track view ---------- */
+  .track-form { display: flex; gap: 10px; align-items: flex-end; }
+  .track-form .field { flex: 1; margin-bottom: 0; }
+  .track-head { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .track-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .track-meta { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-top: 8px; color: var(--muted); font-size: 13px; }
+  .track-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .track-side small { color: var(--muted); font-size: 12px; }
+  .cat-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid; }
+  .cat-badge.Yellow { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .cat-badge.Red { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+  .cat-badge.White { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+  .cat-badge.Blue { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  .pill.lg { font-size: 13px; padding: 6px 14px; }
+  .timeline { list-style: none; margin: 20px 0 0; padding: 0; }
+  .tl-step { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; padding-bottom: 24px; }
+  .tl-step:last-child { padding-bottom: 0; }
+  .tl-step::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--border); }
+  .tl-step:last-child::before { display: none; }
+  .tl-step.line-done::before { background: var(--green); }
+  .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--white); border: 2px solid #cbd5e1; color: #fff; position: relative; }
+  .tl-step.done .tl-dot { background: var(--green); border-color: var(--green); }
+  .tl-step.flag .tl-dot { background: var(--red); border-color: var(--red); }
+  .tl-dot svg.i { width: 15px; height: 15px; stroke-width: 3; }
+  .tl-body { padding-top: 3px; }
+  .tl-label { font-weight: 600; font-size: 14px; }
+  .tl-step.pending .tl-label { color: var(--muted); font-weight: 500; }
+  .tl-time { color: var(--muted); font-size: 12px; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .tl-detail { font-size: 13px; margin-top: 3px; }
+  .tl-reason { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--red-ink); font-size: 13px; font-weight: 600; }
+  .tl-reason svg.i { width: 15px; height: 15px; }
+  .track-empty { text-align: center; color: var(--muted); padding: 28px 12px; }
+  .track-empty b { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+  .track-link { margin-top: 12px; }
+  .link-btn { border: 0; background: none; color: var(--green-ink); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 5px; }
+  .link-btn svg.i { width: 14px; height: 14px; }
+  .field em { font-style: normal; font-weight: 400; color: var(--muted); }
 
 
   .btn.danger { background: var(--red); }
@@ -228,7 +266,7 @@
     .side-foot { display: none; }
 
     /* bottom tab bar */
-    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
+    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
     .nav-label { display: none; }
     .nav-item { position: relative; flex-direction: column; justify-content: center; gap: 3px; margin: 0; padding: 7px 4px; min-height: 52px; font-size: 12px; text-align: center; border-radius: 12px; }
     .nav-item svg.i { width: 22px; height: 22px; }
@@ -266,6 +304,8 @@
     .scan-panel .top > span { text-align: center; }
     .card-head { flex-wrap: wrap; }
     .qr-frame { width: 210px; height: 210px; }
+    .track-side { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+    .track-form .btn { flex: none; }
 
     /* tables become stacked cards */
     .tbl-wrap { overflow: visible; margin: 0; }
@@ -300,6 +340,7 @@
       <button class="nav-item" data-role="clinic"><span data-icon="hospital"></span><span class="txt">Clinic<span class="sub">Log &amp; label bags</span></span></button>
       <button class="nav-item" data-role="collector"><span data-icon="truck"></span><span class="txt">Collector<span class="sub">Confirm pickups</span></span><span class="count orange" id="navPending"></span></button>
       <button class="nav-item" data-role="monitor"><span data-icon="dashboard"></span><span class="txt">Monitor<span class="sub">Dashboard &amp; exceptions</span></span><span class="count red" id="navEx"></span></button>
+      <button class="nav-item" data-role="track"><span data-icon="route"></span><span class="txt">Track<span class="sub">Follow a bag's journey</span></span></button>
     </nav>
     <div class="side-foot">
       <div class="status-card">
@@ -349,6 +390,7 @@
             <div class="qr-frame" id="qr"></div>
             <div class="qr-id mono" id="qrId"></div>
             <div class="qr-hint" id="qrHint">Save a bag to generate its QR code</div>
+            <a class="btn ghost track-link" id="trackThisBtn" href="#" hidden><span data-icon="route"></span>Track this bag</a>
           </div>
         </div>
         <div class="card">
@@ -369,17 +411,18 @@
               <div class="top">
                 <div class="actions">
                   <button class="btn ghost" type="button" id="scanBtn"><span data-icon="camera"></span><span>Scan with camera</span></button>
-                  <label class="btn ghost file-btn"><span data-icon="image"></span>Scan from photo<input type="file" accept="image/*" id="scanFile"></label>
+                  <label class="btn ghost file-btn"><span data-icon="image"></span>Scan from photo<input type="file" accept="image/*" id="scanFile" data-scan="collector"></label>
                 </div>
                 <span>Manual entry always works</span>
               </div>
-              <div id="reader"></div>
+              <div id="reader" class="reader"></div>
             </div>
             <form id="collectForm" novalidate>
               <div class="form-row">
                 <label class="field"><span>Bag ID</span><input id="collectId" type="text" class="mono" placeholder="CL-XXX-00000" autocomplete="off" autocapitalize="characters"></label>
                 <label class="field"><span>Weight at pickup (kg)</span><input id="collectWeight" type="number" step="0.01" min="0" inputmode="decimal" placeholder="e.g. 2.5"></label>
               </div>
+              <label class="field"><span>Collector ID <em>(optional, remembered on this device)</em></span><input id="collectorId" type="text" placeholder="e.g. COL-02" autocomplete="off" autocapitalize="characters"></label>
               <div class="actions"><button class="btn" type="submit"><span data-icon="check"></span>Confirm Pickup</button></div>
             </form>
             <div id="collectMsg" class="msg"></div>
@@ -414,8 +457,8 @@
 
         <div class="card">
           <div class="card-head">
-            <div><h2>Exceptions</h2><p>Bags missed at pickup or with a weight mismatch over 10%</p></div>
-            <div class="legend"><span class="l-missed">Missed at pickup</span><span class="l-weight">Weight mismatch</span></div>
+            <div><h2>Exceptions</h2><p>Bags missed at pickup, uncollected after 24 hours, or with a weight mismatch over 10%</p></div>
+            <div class="legend"><span class="l-missed">Missed or overdue</span><span class="l-weight">Weight mismatch</span></div>
           </div>
           <div class="tbl-wrap"><table>
             <thead><tr><th>Bag ID</th><th>Clinic</th><th>Category</th><th class="num">Clinic kg</th><th class="num">Pickup kg</th><th>Issue</th></tr></thead>
@@ -434,15 +477,38 @@
           </div>
         </div>
       </section>
+
+      <!-- TRACK -->
+      <section id="view-track" hidden>
+        <div class="card">
+          <div class="card-head"><div><h2>Track a bag</h2><p>Type or scan a bag ID to see where it is between the clinic and treatment</p></div></div>
+          <div class="scan-panel">
+            <div class="top">
+              <div class="actions">
+                <button class="btn ghost" type="button" id="trackScanBtn"><span data-icon="camera"></span><span>Scan with camera</span></button>
+                <label class="btn ghost file-btn"><span data-icon="image"></span>Scan from photo<input type="file" accept="image/*" id="trackScanFile" data-scan="track"></label>
+              </div>
+              <span>Manual entry always works</span>
+            </div>
+            <div id="trackReader" class="reader"></div>
+          </div>
+          <form id="trackForm" class="track-form" novalidate>
+            <label class="field"><span>Bag ID</span><input id="trackId" type="text" class="mono" placeholder="CL-XXX-00000" autocomplete="off" autocapitalize="characters"></label>
+            <button class="btn" type="submit"><span data-icon="search"></span>Track</button>
+          </form>
+          <div id="trackMsg" class="msg"></div>
+        </div>
+        <div class="card" id="trackResult" hidden></div>
+      </section>
     </main>
-    <footer>Demo app · data stored locally in your browser</footer>
+    <footer id="footNote">Demo app · data stored locally in your browser</footer>
   </div>
 </div>
 
 <div class="modal-backdrop" id="resetModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
     <h2 id="resetTitle">Reset the demo?</h2>
-    <p id="resetText">This clears every bag logged on this device and reloads the 12 sample bags.</p>
+    <p id="resetText">This clears every bag logged on this device and reloads the sample bags.</p>
     <div class="actions">
       <button class="btn ghost" type="button" id="resetCancel">Cancel</button>
       <button class="btn danger" type="button" id="resetConfirm">Reset demo</button>
@@ -453,6 +519,7 @@
 <script>
 const STORE_KEY = 'bmw-demo-v1';
 const ROLE_KEY = 'bmw-demo-role';
+const COLLECTOR_KEY = 'cleancare-collector-id';
 const CLINICS = [
   { code: 'CCC', name: 'City Care Clinic' },
   { code: 'MSD', name: 'Mediscan Diagnostics' },
@@ -481,6 +548,10 @@ const ICONS = {
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
   qr: '<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
   reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  tick: '<path d="M20 6 9 17l-5-5"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
 const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 function paintIcons(root = document) {
@@ -509,16 +580,28 @@ function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) {}
 }
 
+// Later journey stages (transit, treatment facility, treatment) are optional:
+// bags logged before they existed simply have them as null.
 const toRow = (b) => ({
   id: b.id, clinic: b.clinic, category: b.category, weight: b.weight,
   logged_at: b.loggedAt, status: b.status,
   collector_weight: b.collectorWeight, collected_at: b.collectedAt,
+  collector_id: b.collectorId ?? null, vehicle_id: b.vehicleId ?? null,
+  in_transit_at: b.transitAt ?? null,
+  received_at: b.receivedAt ?? null, received_weight: b.receivedWeight ?? null, facility: b.facility ?? null,
+  treated_at: b.treatedAt ?? null, treatment_method: b.treatmentMethod ?? null, certificate_ref: b.certificateRef ?? null,
 });
+const isoOrNull = (v) => (v ? new Date(v).toISOString() : null);
+const numOrNull = (v) => (v == null ? null : Number(v));
 const fromRow = (r) => ({
   id: r.id, clinic: r.clinic, category: r.category, weight: Number(r.weight),
   loggedAt: new Date(r.logged_at).toISOString(), status: r.status,
-  collectorWeight: r.collector_weight == null ? null : Number(r.collector_weight),
-  collectedAt: r.collected_at ? new Date(r.collected_at).toISOString() : null,
+  collectorWeight: numOrNull(r.collector_weight),
+  collectedAt: isoOrNull(r.collected_at),
+  collectorId: r.collector_id ?? null, vehicleId: r.vehicle_id ?? null,
+  transitAt: isoOrNull(r.in_transit_at),
+  receivedAt: isoOrNull(r.received_at), receivedWeight: numOrNull(r.received_weight), facility: r.facility ?? null,
+  treatedAt: isoOrNull(r.treated_at), treatmentMethod: r.treatment_method ?? null, certificateRef: r.certificate_ref ?? null,
 });
 
 function setSync(state, text, sub) {
@@ -562,6 +645,8 @@ async function startCloud() {
     console.error(e);
     setSync('err', 'Offline', 'Could not reach the server. Check config.js');
   }
+  dataReady = true;
+  $('footNote').textContent = 'Live demo · data shared by everyone with this link';
   render();
   cloud.channel('bags-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'bags' }, refreshSoon)
@@ -592,11 +677,11 @@ async function addBag(bag) {
 }
 
 // Returns the updated bag, or null if another device collected it first
-async function collectBag(bag, weight) {
-  const patch = { status: 'collected', collectorWeight: weight, collectedAt: new Date().toISOString() };
+async function collectBag(bag, weight, collectorId = null) {
+  const patch = { status: 'collected', collectorWeight: weight, collectedAt: new Date().toISOString(), collectorId };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ status: 'collected', collector_weight: weight, collected_at: patch.collectedAt })
+    .update({ status: 'collected', collector_weight: weight, collected_at: patch.collectedAt, collector_id: collectorId })
     .eq('id', bag.id).eq('status', 'logged')
     .select();
   if (error) throw error;
@@ -605,11 +690,12 @@ async function collectBag(bag, weight) {
   return bag;
 }
 
-function todayAt(h, m) {
-  const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString();
+function todayAt(h, m, dayOffset = 0) {
+  const d = new Date(); d.setDate(d.getDate() + dayOffset); d.setHours(h, m, 0, 0); return d.toISOString();
 }
 function seed() {
-  // [clinic, category, kg, logged h:m, pickup kg or null, collected h:m]
+  const CREW = { collectorId: 'COL-02', vehicleId: 'VAN-07' };
+  // Today: [clinic, category, kg, logged h:m, pickup kg or null, collected h:m]
   const rows = [
     ['CCC', 'Yellow', 2.4, [8, 45], 2.4,  [11, 5]],
     ['CCC', 'Red',    1.8, [9, 10], 1.85, [11, 5]],
@@ -624,17 +710,47 @@ function seed() {
     ['DRD', 'White',  0.4, [10, 0], null],            // not yet picked up
     ['DRD', 'Yellow', 1.1, [11, 15], null],
   ];
+  // Earlier days, so every journey stage has an example
+  const history = [
+    { clinic: 'CCC', category: 'Yellow', weight: 2.0, logged: [9, 15, -1], collected: [11, 10, -1], collectorWeight: 2.05,
+      received: [15, 40, -1], receivedWeight: 2.05, facility: 'City CBWTF', treated: [18, 30, -1],
+      treatmentMethod: 'Incineration', certificateRef: 'CBWTF-TC-40317' },            // fully complete
+    { clinic: 'HPC', category: 'White', weight: 0.7, logged: [10, 0, -1], collected: [12, 40, -1], collectorWeight: 0.7,
+      received: [16, 10, -1], receivedWeight: 0.7, facility: 'City CBWTF', treated: [19, 5, -1],
+      treatmentMethod: 'Autoclave + shredding', certificateRef: 'CBWTF-TC-40322' },   // fully complete (sharps)
+    { clinic: 'MSD', category: 'Red', weight: 1.6, logged: [9, 30, -1], collected: [11, 45, -1], collectorWeight: 1.6,
+      received: [16, 0, -1], receivedWeight: 1.58, facility: 'City CBWTF' },           // awaiting treatment
+    { clinic: 'DRD', category: 'Blue', weight: 0.9, logged: [17, 30, -2] },              // overdue: not collected >24 h
+  ];
   const bags = [];
   const used = new Set();
+  const blank = {
+    collectorId: null, vehicleId: null, transitAt: null, receivedAt: null, receivedWeight: null,
+    facility: null, treatedAt: null, treatmentMethod: null, certificateRef: null,
+  };
+  const add = (b) => { b.id = newBagId(b.clinic, used); used.add(b.id); bags.push({ ...blank, ...b }); };
   for (const [clinic, category, weight, lt, cw, ct] of rows) {
-    const id = newBagId(clinic, used);
-    used.add(id);
-    bags.push({
-      id, clinic, category, weight,
+    add({
+      clinic, category, weight,
       loggedAt: todayAt(...lt),
       status: cw == null ? 'logged' : 'collected',
       collectorWeight: cw,
       collectedAt: cw == null ? null : todayAt(...ct),
+      ...(cw == null ? {} : CREW),
+    });
+  }
+  for (const h of history) {
+    add({
+      clinic: h.clinic, category: h.category, weight: h.weight,
+      loggedAt: todayAt(...h.logged),
+      status: h.collected ? 'collected' : 'logged',
+      collectorWeight: h.collectorWeight ?? null,
+      collectedAt: h.collected ? todayAt(...h.collected) : null,
+      ...(h.collected ? CREW : {}),
+      receivedAt: h.received ? todayAt(...h.received) : null,
+      receivedWeight: h.receivedWeight ?? null, facility: h.facility ?? null,
+      treatedAt: h.treated ? todayAt(...h.treated) : null,
+      treatmentMethod: h.treatmentMethod ?? null, certificateRef: h.certificateRef ?? null,
     });
   }
   return { bags };
@@ -649,6 +765,7 @@ function newBagId(clinicCode, taken) {
 }
 
 let db = cloud ? { bags: [] } : (load() || seed());
+let dataReady = !cloud;
 save();
 
 // ---------- helpers ----------
@@ -682,12 +799,43 @@ function weightDiff(bag) {
   return (bag.collectorWeight - bag.weight) / bag.weight;
 }
 const todaysBags = () => db.bags.filter((b) => isToday(b.loggedAt) || isToday(b.collectedAt));
+const fmtDateTime = (iso) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const normId = (s) => { const m = String(s).toUpperCase().match(/CL-[A-Z]{3}-\d{5}/); return m ? m[0] : String(s).trim().toUpperCase(); };
+
+// Latest pickup so far today at this clinic (a bag logged before it and still uncollected was missed)
+function lastPickupAt(clinic, now = Date.now()) {
+  let last = null;
+  for (const b of db.bags) {
+    if (b.clinic !== clinic || b.status !== 'collected' || !isToday(b.collectedAt)) continue;
+    if (Date.parse(b.collectedAt) > now) continue; // not yet happened (sample data uses fixed clock times)
+    if (!last || b.collectedAt > last) last = b.collectedAt;
+  }
+  return last;
+}
+
+const OVERDUE_MS = 24 * 60 * 60 * 1000;
+// Flags shared by the Monitor exceptions and the Track timeline
+function bagFlags(b, now = Date.now()) {
+  const flags = {};
+  const diff = weightDiff(b);
+  if (b.collectorWeight != null && Math.abs(diff) > WEIGHT_TOLERANCE) {
+    flags.weight = `Weight ${diff > 0 ? '+' : ''}${(diff * 100).toFixed(0)}% vs clinic (${fmtKg(b.weight)} → ${fmtKg(b.collectorWeight)} kg)`;
+  }
+  if (b.status === 'logged') {
+    const age = now - Date.parse(b.loggedAt);
+    const pickup = lastPickupAt(b.clinic, now);
+    if (age > OVERDUE_MS) flags.overdue = `Overdue: not collected ${Math.floor(age / 3.6e6)} h after logging`;
+    else if (pickup && b.loggedAt < pickup) flags.missed = `Missed at the ${fmtTime(pickup)} pickup`;
+  }
+  return flags;
+}
 
 // ---------- role switching ----------
 const VIEWS = {
   clinic:    { title: 'Clinic', sub: 'Log waste bags and print QR labels', who: 'Clinic staff', init: 'CL' },
   collector: { title: 'Collector', sub: 'Scan or enter bag IDs to confirm pickup', who: 'Waste collector', init: 'CO' },
   monitor:   { title: 'Monitor', sub: "Today's collection status and exceptions", who: 'Monitoring officer', init: 'MO' },
+  track:     { title: 'Track', sub: 'Follow a bag from the clinic to treatment', who: 'Bag tracking', init: 'TR' },
 };
 let role = 'monitor';
 try { role = localStorage.getItem(ROLE_KEY) || 'monitor'; } catch (e) {}
@@ -705,7 +853,11 @@ function setRole(r) {
   $('whoName').textContent = v.who;
   $('whoSub').textContent = r === 'clinic' ? clinicName($('clinicSel').value) : 'Demo user';
   $('whoInit').textContent = v.init;
-  if (r !== 'collector') stopScanner();
+  stopScanner();
+  // Keep ?track= in the address bar only while the Track view is open
+  if (r !== 'track' && new URLSearchParams(location.search).has('track')) {
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  }
   render();
 }
 document.querySelectorAll('.nav-item').forEach((b) => b.addEventListener('click', () => setRole(b.dataset.role)));
@@ -731,6 +883,9 @@ function showQr(id) {
   new QRCode(box, { text: id, width: 170, height: 170, correctLevel: QRCode.CorrectLevel.M });
   $('qrId').textContent = id;
   $('qrHint').textContent = 'Print and attach to the bag';
+  $('trackThisBtn').href = '?track=' + encodeURIComponent(id);
+  $('trackThisBtn').dataset.track = id;
+  $('trackThisBtn').hidden = false;
 }
 function clearQr() {
   const box = $('qr');
@@ -738,6 +893,7 @@ function clearQr() {
   box.innerHTML = icon('qr');
   $('qrId').textContent = '';
   $('qrHint').textContent = 'Save a bag to generate its QR code';
+  $('trackThisBtn').hidden = true;
 }
 
 $('clinicForm').addEventListener('submit', async (e) => {
@@ -821,9 +977,11 @@ async function confirmPickup() {
   if (w.blank) return showMsg(msg, 'err', 'Weight is blank. Weigh the bag and enter the weight in kg.');
   if (w.invalid) return showMsg(msg, 'err', 'Weight must be a number greater than 0.');
 
+  const collectorId = $('collectorId').value.trim().toUpperCase() || null;
+  try { localStorage.setItem(COLLECTOR_KEY, collectorId || ''); } catch (e) {}
   let done;
   try {
-    done = await collectBag(bag, w.value);
+    done = await collectBag(bag, w.value, collectorId);
   } catch (err) {
     console.error(err);
     return showMsg(msg, 'err', 'Could not confirm the pickup. Check your connection and try again.');
@@ -872,105 +1030,115 @@ function renderCollector() {
     <div class="list-row" data-id="${esc(b.id)}" style="cursor:pointer" title="Use this ID">
       <span class="dot ${esc(b.category)}"></span>
       <div class="body"><b class="mono">${esc(b.id)}</b><small>${esc(clinicName(b.clinic))}</small></div>
-      <div class="right"><b>${fmtKg(b.weight)} kg</b><small>${fmtTime(b.loggedAt)}</small></div>
+      <div class="right"><b>${fmtKg(b.weight)} kg</b>${bagFlags(b).overdue ? '<span class="pill red">Overdue</span>' : `<small>${fmtTime(b.loggedAt)}</small>`}</div>
     </div>`).join('') : `<div class="empty">All bags collected.</div>`;
 }
 
 // ---------- camera scanning (html5-qrcode), manual entry stays as fallback ----------
-let scanner = null;
+// Collector and Track each have their own viewfinder; only one camera runs at a time.
+const SCAN = {
+  collector: {
+    reader: 'reader', btn: 'scanBtn', msg: 'collectMsg', input: 'collectId',
+    onId(id) {
+      $('collectId').value = id;
+      if (/^CL-[A-Z]{3}-\d{5}$/.test(id)) {
+        showMsg($('collectMsg'), 'ok', `Scanned ${id}. Enter the pickup weight and confirm.`);
+      } else {
+        showMsg($('collectMsg'), 'warn', `Scanned "${id}", which doesn't look like a bag ID. Check it or type the ID manually.`);
+      }
+      $('collectWeight').focus();
+    },
+  },
+  track: {
+    reader: 'trackReader', btn: 'trackScanBtn', msg: 'trackMsg', input: 'trackId',
+    onId(id) { $('trackId').value = id; openTrack(id); },
+  },
+};
+const scanners = {};
 let scanning = false;
+let scanKey = null;
 
-function setScanLabel(text) { $('scanBtn').lastElementChild.textContent = text; }
+const scannerFor = (key) => (scanners[key] = scanners[key] || new Html5Qrcode(SCAN[key].reader));
+function setScanLabel(key, text) { $(SCAN[key].btn).lastElementChild.textContent = text; }
 
 function onScanned(text) {
-  const id = String(text).trim().toUpperCase();
-  $('collectId').value = id;
+  const key = scanKey;
   stopScanner();
-  if (/^CL-[A-Z]{3}-\d{5}$/.test(id)) {
-    showMsg($('collectMsg'), 'ok', `Scanned ${id}. Enter the pickup weight and confirm.`);
-  } else {
-    showMsg($('collectMsg'), 'warn', `Scanned "${id}", which doesn't look like a bag ID. Check it or type the ID manually.`);
-  }
-  $('collectWeight').focus();
+  SCAN[key].onId(normId(text));
 }
 
-function scanUnavailable(reason) {
-  showMsg($('collectMsg'), 'err', `${reason} Type the bag ID manually instead.`);
-  $('collectId').focus();
+function scanUnavailable(key, reason) {
+  showMsg($(SCAN[key].msg), 'err', `${reason} Type the bag ID manually instead.`);
+  $(SCAN[key].input).focus();
 }
 
-async function startScanner() {
-  if (typeof Html5Qrcode === 'undefined') return scanUnavailable('Scanner library failed to load (offline?).');
-  if (!window.isSecureContext) return scanUnavailable('Camera needs HTTPS or localhost.');
-  clearMsg($('collectMsg'));
-  // The library sizes the preview from #reader's width, so it must be visible before starting
-  $('reader').classList.add('active');
-  scanner = scanner || new Html5Qrcode('reader');
+async function startScanner(key) {
+  if (typeof Html5Qrcode === 'undefined') return scanUnavailable(key, 'Scanner library failed to load (offline?).');
+  if (!window.isSecureContext) return scanUnavailable(key, 'Camera needs HTTPS or localhost.');
+  await stopScanner();
+  clearMsg($(SCAN[key].msg));
+  const readerEl = $(SCAN[key].reader);
+  // The library sizes the preview from the reader's width, so it must be visible before starting
+  readerEl.classList.add('active');
   try {
-    await scanner.start(
+    scanKey = key;
+    await scannerFor(key).start(
       { facingMode: 'environment' },
       { fps: 10, qrbox: { width: 220, height: 220 } },
       onScanned,
       () => {} // per-frame "no code found" – ignore
     );
     scanning = true;
-    setScanLabel('Stop camera');
+    setScanLabel(key, 'Stop camera');
   } catch (err) {
     scanning = false;
-    $('reader').classList.remove('active');
-    $('reader').innerHTML = '';
+    readerEl.classList.remove('active');
+    readerEl.innerHTML = '';
     const name = err && (err.name || String(err));
-    if (/NotAllowed|Permission/i.test(name)) scanUnavailable('Camera permission was denied.');
-    else if (/NotFound|Requested device not found/i.test(name)) scanUnavailable('No camera found on this device.');
-    else scanUnavailable('Could not start the camera.');
+    if (/NotAllowed|Permission/i.test(name)) scanUnavailable(key, 'Camera permission was denied.');
+    else if (/NotFound|Requested device not found/i.test(name)) scanUnavailable(key, 'No camera found on this device.');
+    else scanUnavailable(key, 'Could not start the camera.');
   }
 }
 
 async function stopScanner() {
-  if (scanner && scanning) {
+  if (scanning && scanKey) {
     scanning = false;
-    try { await scanner.stop(); scanner.clear(); } catch (e) {}
+    try { await scanners[scanKey].stop(); scanners[scanKey].clear(); } catch (e) {}
   }
-  $('reader').classList.remove('active');
-  setScanLabel('Scan with camera');
+  for (const key of Object.keys(SCAN)) {
+    $(SCAN[key].reader).classList.remove('active');
+    setScanLabel(key, 'Scan with camera');
+  }
 }
 
-$('scanBtn').addEventListener('click', () => (scanning ? stopScanner() : startScanner()));
+for (const key of Object.keys(SCAN)) {
+  $(SCAN[key].btn).addEventListener('click', () => (scanning && scanKey === key ? stopScanner() : startScanner(key)));
+}
 
-$('scanFile').addEventListener('change', async (e) => {
+document.querySelectorAll('input[data-scan]').forEach((input) => input.addEventListener('change', async (e) => {
+  const key = input.dataset.scan;
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!file) return;
-  if (typeof Html5Qrcode === 'undefined') return scanUnavailable('Scanner library failed to load (offline?).');
+  if (typeof Html5Qrcode === 'undefined') return scanUnavailable(key, 'Scanner library failed to load (offline?).');
   await stopScanner();
-  scanner = scanner || new Html5Qrcode('reader');
   try {
-    const text = await scanner.scanFile(file, false);
-    onScanned(text);
+    const text = await scannerFor(key).scanFile(file, false);
+    SCAN[key].onId(normId(text));
   } catch (err) {
-    scanUnavailable('No QR code found in that image.');
+    scanUnavailable(key, 'No QR code found in that image.');
   }
-});
+}));
 
 // ---------- monitor view ----------
 function exceptions() {
   const out = [];
-  // Latest pickup time per clinic today
-  const lastPickup = {};
   for (const b of db.bags) {
-    if (b.status === 'collected' && isToday(b.collectedAt)) {
-      if (!lastPickup[b.clinic] || b.collectedAt > lastPickup[b.clinic]) lastPickup[b.clinic] = b.collectedAt;
-    }
-  }
-  for (const b of db.bags) {
-    const pickup = lastPickup[b.clinic];
-    if (b.status === 'logged' && pickup && b.loggedAt < pickup) {
-      out.push({ bag: b, type: 'missed', issue: `Still logged after pickup at ${fmtTime(pickup)}` });
-    }
-    const diff = weightDiff(b);
-    if (b.status === 'collected' && Math.abs(diff) > WEIGHT_TOLERANCE) {
-      out.push({ bag: b, type: 'weight', issue: `Weight ${diff > 0 ? '+' : ''}${(diff * 100).toFixed(0)}% vs clinic` });
-    }
+    const f = bagFlags(b);
+    if (f.overdue) out.push({ bag: b, type: 'overdue', issue: f.overdue.replace('Overdue: n', 'N') });
+    if (f.missed) out.push({ bag: b, type: 'missed', issue: f.missed });
+    if (f.weight) out.push({ bag: b, type: 'weight', issue: f.weight.replace(/ \(.*\)$/, '') });
   }
   return out;
 }
@@ -1007,16 +1175,16 @@ function renderMonitor() {
   }).join('');
 
   $('exTbody').innerHTML = ex.length ? ex.map(({ bag: b, type, issue }) => `
-    <tr class="ex-${type}">
-      <td class="mono">${esc(b.id)}</td>
+    <tr class="ex-${type === 'weight' ? 'weight' : 'missed'}">
+      <td class="mono"><a class="idlink" href="?track=${encodeURIComponent(b.id)}" data-track="${esc(b.id)}" title="Track this bag">${esc(b.id)}</a></td>
       <td>${esc(clinicName(b.clinic))}</td>
       <td>${catCell(b.category)}</td>
       <td class="num">${fmtKg(b.weight)}</td>
       <td class="num">${fmtKg(b.collectorWeight)}</td>
-      <td><span class="pill ${type === 'missed' ? 'red' : 'orange'}">${esc(issue)}</span></td>
+      <td><span class="pill ${type === 'weight' ? 'orange' : 'red'}">${esc(issue)}</span></td>
     </tr>`).join('') : `<tr><td colspan="6" class="empty">No exceptions. All good.</td></tr>`;
 
-  const missedBy = new Set(ex.filter((x) => x.type === 'missed').map((x) => x.bag.clinic));
+  const missedBy = new Set(ex.filter((x) => x.type !== 'weight').map((x) => x.bag.clinic));
   $('clinicList').innerHTML = CLINICS.map((c) => {
     const bags = today.filter((b) => b.clinic === c.code);
     const done = bags.filter((b) => b.status === 'collected').length;
@@ -1049,6 +1217,122 @@ function renderMonitor() {
     </div>`).join('') : `<div class="empty">No activity yet today.</div>`;
 }
 
+// ---------- track view ----------
+let trackedId = null;
+
+function openTrack(id) {
+  trackedId = normId(id);
+  $('trackId').value = trackedId;
+  clearMsg($('trackMsg'));
+  try { history.replaceState(null, '', '?track=' + encodeURIComponent(trackedId)); } catch (e) {}
+  if (role !== 'track') setRole('track'); else render();
+}
+
+$('trackForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const raw = $('trackId').value.trim();
+  if (!raw) return showMsg($('trackMsg'), 'err', 'Enter or scan a bag ID.');
+  openTrack(raw);
+});
+
+// Any "track" link (Clinic label, Monitor exceptions) opens the timeline in place
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-track]');
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;
+  e.preventDefault();
+  openTrack(a.dataset.track);
+});
+
+// The journey as five checkpoints, each done / pending / flagged
+function journey(b) {
+  const f = bagFlags(b);
+  const collected = b.status === 'collected';
+  const steps = [];
+  steps.push({
+    label: 'Logged at clinic', state: 'done', time: b.loggedAt,
+    detail: `${clinicName(b.clinic)} · ${CATEGORIES[b.category] || b.category} · ${fmtKg(b.weight)} kg`,
+  });
+  if (collected) {
+    steps.push({
+      label: 'Collected', state: f.weight ? 'flag' : 'done', time: b.collectedAt, reason: f.weight,
+      detail: `Collector ${b.collectorId || 'not recorded'} · ${fmtKg(b.collectorWeight)} kg at pickup`,
+    });
+  } else if (f.overdue || f.missed) {
+    steps.push({ label: 'Collected', state: 'flag', reason: f.overdue || f.missed });
+  } else {
+    steps.push({ label: 'Collected', state: 'pending' });
+  }
+  steps.push(collected ? {
+    label: 'In transit', state: 'done', time: b.transitAt || b.collectedAt,
+    detail: b.vehicleId ? `Vehicle ${b.vehicleId}` : b.collectorId ? `With collector ${b.collectorId}` : 'Vehicle not recorded',
+  } : { label: 'In transit', state: 'pending' });
+  steps.push(b.receivedAt ? {
+    label: 'Received at treatment facility', state: 'done', time: b.receivedAt,
+    detail: `${b.receivedWeight != null ? fmtKg(b.receivedWeight) + ' kg on arrival' : 'Arrival weight not recorded'}${b.facility ? ' · ' + b.facility : ''}`,
+  } : { label: 'Received at treatment facility', state: 'pending' });
+  steps.push(b.treatedAt ? {
+    label: 'Treated', state: 'done', time: b.treatedAt,
+    detail: `${b.treatmentMethod || 'Method not recorded'}${b.certificateRef ? ' · Certificate ' + b.certificateRef : ''}`,
+  } : { label: 'Treated', state: 'pending' });
+
+  const status = f.weight ? ['red', 'Exception'] : (f.overdue || f.missed) ? ['orange', 'Delayed'] : ['green', 'On track'];
+  const reached = steps.filter((st) => st.time).length; // only steps that actually happened
+  return { steps, status, stage: steps[reached - 1].label, reached };
+}
+
+function renderTrack() {
+  const box = $('trackResult');
+  if (!trackedId) { box.hidden = true; return; }
+  box.hidden = false;
+  if (!dataReady) {
+    box.innerHTML = `<div class="track-empty"><b>Loading…</b>Fetching the latest records</div>`;
+    return;
+  }
+  const b = db.bags.find((x) => x.id === trackedId);
+  if (!b) {
+    box.innerHTML = `<div class="track-empty"><b>No record found for this bag ID</b><span class="mono">${esc(trackedId)}</span> isn't in the records. Check the label and try again.</div>`;
+    return;
+  }
+  const j = journey(b);
+  box.innerHTML = `
+    <div class="track-head">
+      <div>
+        <div class="track-id">${esc(b.id)}</div>
+        <div class="track-meta">
+          <span class="cat-badge ${esc(b.category)}"><span class="dot ${esc(b.category)}"></span>${esc(CATEGORIES[b.category] || b.category)}</span>
+          <span>${esc(clinicName(b.clinic))}</span>
+        </div>
+      </div>
+      <div class="track-side">
+        <span class="pill lg ${j.status[0]}">${j.status[1]}</span>
+        <small>Step ${j.reached} of ${j.steps.length} · ${esc(j.stage)}</small>
+        <button class="link-btn" type="button" id="copyTrackLink">${icon('link')}<span>Copy tracking link</span></button>
+      </div>
+    </div>
+    <ol class="timeline">
+      ${j.steps.map((st, i) => {
+        const next = j.steps[i + 1];
+        const lineDone = st.state !== 'pending' && next && next.state !== 'pending';
+        return `
+      <li class="tl-step ${st.state}${lineDone ? ' line-done' : ''}">
+        <div class="tl-dot">${st.state === 'done' ? icon('tick') : st.state === 'flag' ? icon('alert') : ''}</div>
+        <div class="tl-body">
+          <div class="tl-label">${esc(st.label)}</div>
+          ${st.time ? `<div class="tl-time">${fmtDateTime(st.time)}</div>` : ''}
+          ${st.detail && st.state !== 'pending' ? `<div class="tl-detail">${esc(st.detail)}</div>` : ''}
+          ${st.state === 'flag' ? `<div class="tl-reason">${esc(st.reason)}</div>` : ''}
+        </div>
+      </li>`;
+      }).join('')}
+    </ol>`;
+  $('copyTrackLink').addEventListener('click', async (e) => {
+    const url = location.origin + location.pathname + '?track=' + encodeURIComponent(b.id);
+    const label = e.currentTarget.querySelector('span');
+    try { await navigator.clipboard.writeText(url); label.textContent = 'Link copied'; }
+    catch (err) { label.textContent = url; }
+  });
+}
+
 function renderBadges() {
   const pending = db.bags.filter((b) => b.status === 'logged').length;
   const ex = exceptions().length;
@@ -1059,8 +1343,8 @@ function renderBadges() {
 // ---------- reset & init ----------
 function openReset() {
   $('resetText').textContent = cloud
-    ? 'This deletes every bag for everyone using this site and reloads the 12 sample bags.'
-    : 'This clears every bag logged on this device and reloads the 12 sample bags.';
+    ? 'This deletes every bag for everyone using this site and reloads the sample bags.'
+    : 'This clears every bag logged on this device and reloads the sample bags.';
   $('resetModal').hidden = false;
   $('resetCancel').focus();
 }
@@ -1082,6 +1366,7 @@ async function resetDemo() {
   clearQr();
   clearMsg($('clinicMsg'));
   clearMsg($('collectMsg'));
+  clearMsg($('trackMsg'));
   render();
 }
 $('resetBtn').addEventListener('click', openReset);
@@ -1096,6 +1381,7 @@ const camPolicy = document.permissionsPolicy || document.featurePolicy;
 if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
     || (camPolicy && camPolicy.allowsFeature && !camPolicy.allowsFeature('camera'))) {
   $('scanBtn').hidden = true;
+  $('trackScanBtn').hidden = true;
 }
 
 function labelCells() {
@@ -1111,6 +1397,7 @@ function render() {
   renderBadges();
   if (role === 'clinic') renderClinic();
   else if (role === 'collector') renderCollector();
+  else if (role === 'track') renderTrack();
   else renderMonitor();
   labelCells();
 }
@@ -1118,6 +1405,14 @@ function render() {
 paintIcons();
 $('dateChip').textContent = new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 clearQr();
+try { $('collectorId').value = localStorage.getItem(COLLECTOR_KEY) || ''; } catch (e) {}
+// A link like ?track=CL-ABC-00231 opens that bag's timeline directly
+const trackParam = new URLSearchParams(location.search).get('track');
+if (trackParam) {
+  role = 'track';
+  trackedId = normId(trackParam);
+  $('trackId').value = trackedId;
+}
 setRole(VIEWS[role] ? role : 'monitor');
 if (cloud) startCloud();
 </script>
