@@ -47,3 +47,22 @@ alter table public.bags
 -- How the bag colour was chosen at the clinic: 'camera-assisted' or 'manual' (display only). Safe to re-run.
 alter table public.bags
   add column if not exists selection_method text check (selection_method in ('camera-assisted', 'manual'));
+
+-- Chain of custody: every handover as a timestamped event, in order. Safe to re-run.
+-- Each event: {"step": "logged" | "collected" | "in_transit" | "received" | "treated",
+--              "at": timestamp, "role": "clinic" | "collector" | "facility", "actor": ID or name,
+--              "weight": kg (logged, collected, received), plus "vehicle" / "method" / "certificate"}
+alter table public.bags
+  add column if not exists events jsonb not null default '[]'::jsonb;
+
+-- Build the history for bags saved before this column existed, from their stage columns
+update public.bags b set events = (
+  select coalesce(jsonb_agg(e order by (e->>'at')::timestamptz), '[]'::jsonb) from (
+    select jsonb_build_object('step', 'logged', 'at', b.logged_at, 'role', 'clinic', 'actor', b.clinic, 'weight', b.weight) as e
+    union all select jsonb_strip_nulls(jsonb_build_object('step', 'collected', 'at', b.collected_at, 'role', 'collector', 'actor', b.collector_id, 'weight', b.collector_weight)) where b.collected_at is not null
+    union all select jsonb_strip_nulls(jsonb_build_object('step', 'in_transit', 'at', b.in_transit_at, 'role', 'collector', 'actor', b.collector_id, 'vehicle', b.vehicle_id)) where b.in_transit_at is not null
+    union all select jsonb_strip_nulls(jsonb_build_object('step', 'received', 'at', b.received_at, 'role', 'facility', 'actor', b.facility, 'weight', b.received_weight)) where b.received_at is not null
+    union all select jsonb_strip_nulls(jsonb_build_object('step', 'treated', 'at', b.treated_at, 'role', 'facility', 'actor', b.facility, 'method', b.treatment_method, 'certificate', b.certificate_ref)) where b.treated_at is not null
+  ) x
+)
+where b.events = '[]'::jsonb;

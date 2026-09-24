@@ -6,10 +6,10 @@ https://shivanshrrp.github.io/cleancare/
 | Role | What it does |
 | --- | --- |
 | **Clinic** | Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label. **Not sure? Scan an item** photographs a loose item and suggests its bag colour (staff confirm before saving) |
-| **Collector** | Scan or type the bag ID at pickup and record the weight |
-| **Facility** | Record the arrival weight at the treatment facility, then the treatment method and certificate |
-| **Monitor** | Today's counts and exceptions: bags missed at pickup, uncollected after 24 h, or weights more than 10% off |
-| **Track** | A parcel-style timeline for any bag; links like `?track=CL-ABC-00231` open it directly |
+| **Collector** | For the collection crew. Scan or type the bag ID at pickup and record the weight, then **Start trip** when the vehicle leaves: every bag on board is marked *In transit* at that time, with the vehicle number |
+| **Facility** | For staff at the treatment plant (CBWTF), not the collector. Confirm each bag on arrival with its weight, then record the treatment method and certificate |
+| **Monitor** | Today's counts, activity and exceptions: bags missed at pickup, uncollected after 24 h, not received at the CBWTF within 24 h of pickup (the CPCB rule), or with a weight change over 10% at any handover. Each clinic is listed with its registration code |
+| **Track** | A parcel-style timeline for any bag, showing the date and time of every checkpoint; links like `?track=CL-ABC-00231` open it directly |
 
 A single static page (`index.html`) with no build step. Data is shared in real time through Supabase.
 There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk
@@ -33,7 +33,7 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
    - the **anon** / **publishable** key. Never use the `service_role` / secret key; it would be public on the site.
 4. Paste both into `config.js`.
 
-The first time the site opens, it loads the 12 sample bags into the database.
+The first time the site opens, it loads sample bags from 10 clinics into the database. **Reset Demo** reloads them.
 
 ## 2. Put it live on GitHub Pages
 
@@ -50,6 +50,26 @@ The first time the site opens, it loads the 12 sample bags into the database.
 Live camera scanning works on the live site because GitHub Pages serves it over HTTPS.
 
 To update the site later, commit and `git push`. Pages redeploys automatically.
+
+## Chain of custody
+
+Each bag keeps an ordered list of timestamped events, one per handover, in the `events` column:
+
+| Step | Who scans it | Recorded |
+| --- | --- | --- |
+| `logged` | Clinic | time, clinic, weight |
+| `collected` | Collector | time, collector ID, weight at pickup |
+| `in_transit` | Collector (Start trip) | time, collector ID, vehicle |
+| `received` | CBWTF staff (Facility) | time, facility name, arrival weight |
+| `treated` | CBWTF staff (Facility) | time, facility name, treatment method, certificate |
+
+Track draws its timeline from these events, and the exception checks read them too: each weighed handover is
+compared with the one before it. The stage columns (`status`, `collected_at`, …) still hold each bag's current
+state, so older bags without events get a history rebuilt from them.
+
+The sample clinics are small facilities (clinics, dental practices, pathology labs, diagnostic centres). Each
+has a three-letter code used in bag IDs and a registration code made of five letters from its name, the
+pincode, state code, facility type (CL, DH, PL, DC) and a serial number, e.g. `SAHYA-411030-MH-PL-005`.
 
 ## Languages
 

@@ -132,6 +132,11 @@
   .list-row b { display: block; font-size: 13px; font-weight: 600; }
   .list-row small { color: var(--muted); font-size: 12px; }
   .list-row .right { text-align: right; }
+  .list-row small.reg { display: block; font-size: 11px; letter-spacing: .02em; }
+  .dispatch-form { margin-top: 14px; }
+  .role-note { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 11px 14px; border-radius: 12px;
+    background: var(--green-light); color: var(--green-ink); font-size: 13px; font-weight: 500; }
+  .role-note svg.i { width: 17px; height: 17px; flex: none; margin-top: 1px; }
   .list-row .right b { font-size: 13px; }
   .list-row .tile { width: 38px; height: 38px; border-radius: 10px; }
   .list-row .tile svg.i { width: 17px; height: 17px; }
@@ -487,6 +492,7 @@
 
       <!-- COLLECTOR -->
       <section id="view-collector" hidden>
+        <div class="role-note"><span data-icon="truck"></span><span data-i18n="collector.who">For the collection crew: pick up bags at each clinic, then log when the vehicle leaves for the treatment facility (CBWTF).</span></div>
         <div class="grid-main stack">
           <div class="card">
             <div class="card-head"><div><h2 data-i18n="collector.confirm">Confirm pickup</h2><p data-i18n="collector.confirmSub">Scan the bag label or type its ID, then weigh the bag</p></div></div>
@@ -516,9 +522,18 @@
           </div>
         </div>
         <div class="card">
+          <div class="card-head"><div><h2 data-i18n="collector.dispatch">Leave for the CBWTF</h2><p data-i18n="collector.dispatchSub">Bags on board that haven't left yet. Log the departure when the vehicle sets off: each bag gets an "In transit" time.</p></div><span class="pill orange" id="dispatchCount"></span></div>
+          <div id="dispatchList"></div>
+          <form id="dispatchForm" class="dispatch-form" novalidate>
+            <label class="field"><span><span data-i18n="collector.vehicle">Vehicle number</span> <em data-i18n="collector.idNote">(optional, remembered on this device)</em></span><input id="vehicleId" type="text" placeholder="e.g. VAN-07" data-i18n-ph="collector.vehiclePh" autocomplete="off" autocapitalize="characters"></label>
+            <div class="actions"><button class="btn" type="submit" id="dispatchBtn"><span data-icon="route"></span><span id="dispatchBtnText" data-i18n="collector.dispatchBtn">Start trip</span></button></div>
+          </form>
+          <div id="dispatchMsg" class="msg"></div>
+        </div>
+        <div class="card">
           <div class="card-head"><div><h2 data-i18n="collector.today">Collected today</h2><p data-i18n="collector.todaySub">Pickups confirmed today</p></div><span class="pill green" id="collectedCount"></span></div>
           <div class="tbl-wrap"><table>
-            <thead><tr><th data-i18n="col.bagId">Bag ID</th><th data-i18n="col.clinic">Clinic</th><th data-i18n="col.category">Category</th><th class="num" data-i18n="col.clinicKg">Clinic kg</th><th class="num" data-i18n="col.pickupKg">Pickup kg</th><th data-i18n="col.collected">Collected</th></tr></thead>
+            <thead><tr><th data-i18n="col.bagId">Bag ID</th><th data-i18n="col.clinic">Clinic</th><th data-i18n="col.category">Category</th><th class="num" data-i18n="col.clinicKg">Clinic kg</th><th class="num" data-i18n="col.pickupKg">Pickup kg</th><th data-i18n="col.collected">Collected</th><th data-i18n="col.left">Left for CBWTF</th></tr></thead>
             <tbody id="collectedTbody"></tbody>
           </table></div>
         </div>
@@ -563,6 +578,7 @@
 
       <!-- FACILITY -->
       <section id="view-facility" hidden>
+        <div class="role-note"><span data-icon="factory"></span><span data-i18n="facility.who">For staff at the treatment plant (CBWTF), not the collector: confirm each bag when it arrives, then record how it was treated.</span></div>
         <div class="grid-main stack">
           <div class="card">
             <div class="card-head"><div><h2 data-i18n="facility.title">Receive or treat a bag</h2><p data-i18n="facility.sub">Scan each bag when it arrives, and again once it has been treated</p></div></div>
@@ -644,7 +660,8 @@
 </div>
 
 <script>
-const STORE_KEY = 'bmw-demo-v1';
+const STORE_KEY = 'bmw-demo-v2'; // v2: 10 clinics and an event history on every bag
+const VEHICLE_KEY = 'cleancare-vehicle-id';
 const ROLE_KEY = 'bmw-demo-role';
 const COLLECTOR_KEY = 'cleancare-collector-id';
 const FACILITY_KEY = 'cleancare-facility-name';
@@ -656,11 +673,20 @@ const TREATMENTS = [
   'Disinfection + recycling', 'Encapsulation',
 ];
 const DEFAULT_TREATMENT = { Yellow: 'Incineration', Red: 'Autoclave + shredding', White: 'Autoclave + shredding', Blue: 'Disinfection + recycling' };
+// Small facilities only. `code` is the three letters in bag IDs (CL-HPC-58022) and never changes.
+// `reg` is the facility's registration code: five letters from the name, pincode, state code,
+// facility type (CL clinic, DH dental practice, PL pathology lab, DC diagnostic centre) and serial number.
 const CLINICS = [
-  { code: 'CCC', name: 'City Care Clinic' },
-  { code: 'MSD', name: 'Mediscan Diagnostics' },
-  { code: 'HPC', name: 'HealthPlus Clinic' },
-  { code: 'DRD', name: 'Dr Rao Dental' },
+  { code: 'CCC', name: 'City Care Clinic',            reg: 'CITYC-411038-MH-CL-001' },
+  { code: 'MSD', name: 'Mediscan Diagnostics',        reg: 'MEDIS-411004-MH-DC-002' },
+  { code: 'HPC', name: 'HealthPlus Clinic',           reg: 'HEALT-411014-MH-CL-003' },
+  { code: 'DRD', name: 'Dr Rao Dental',               reg: 'DRRAO-411007-MH-DH-004' },
+  { code: 'SPL', name: 'Sahyadri Pathology Lab',      reg: 'SAHYA-411030-MH-PL-005' },
+  { code: 'SCC', name: 'Sai Child Care Clinic',       reg: 'SAICH-411028-MH-CL-006' },
+  { code: 'SDC', name: 'Smile Dental Care',           reg: 'SMILE-411045-MH-DH-007' },
+  { code: 'NPL', name: 'Nidan Pathology Lab',         reg: 'NIDAN-411001-MH-PL-008' },
+  { code: 'PDC', name: 'Precision Diagnostic Centre', reg: 'PRECI-411057-MH-DC-009' },
+  { code: 'GWC', name: "Gokhale Women's Clinic",      reg: 'GOKHA-411016-MH-CL-010' },
 ];
 // Bag colours as stored in the database (never translated); labels come from translations.js
 const CAT_ORDER = ['Yellow', 'Red', 'White', 'Blue'];
@@ -755,7 +781,10 @@ const cloud = CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (data && Array.isArray(data.bags)) return data;
+    if (data && Array.isArray(data.bags)) {
+      data.bags.forEach((b) => { if (!Array.isArray(b.events)) b.events = eventsFromColumns(b); });
+      return data;
+    }
   } catch (e) {}
   return null;
 }
@@ -763,6 +792,28 @@ function save() {
   if (cloud) return;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) {}
 }
+
+// ---------- chain of custody ----------
+// Every handover is a timestamped event on the bag, kept in time order:
+//   logged (clinic) → collected (collector) → in_transit (collector) → received (CBWTF) → treated (CBWTF)
+// Each event is { step, at, role, actor, weight? } plus vehicle / method / certificate where they apply.
+// The events are the bag's history (Track reads them); the columns below hold its current state.
+const STEPS = ['logged', 'collected', 'in_transit', 'received', 'treated'];
+const WEIGHED_STEPS = new Set(['logged', 'collected', 'received']);
+const stepEvent = (b, step) => (b.events || []).find((e) => e.step === step) || null;
+const byTime = (list) => list.slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+const withEvent = (b, e) => byTime([...(b.events || []), e]);
+
+// Bags saved before the event history existed: rebuild it from their stage columns
+function eventsFromColumns(b) {
+  const list = [{ step: 'logged', at: b.loggedAt, role: 'clinic', actor: b.clinic, weight: b.weight }];
+  if (b.collectedAt) list.push({ step: 'collected', at: b.collectedAt, role: 'collector', actor: b.collectorId ?? null, weight: b.collectorWeight });
+  if (b.transitAt) list.push({ step: 'in_transit', at: b.transitAt, role: 'collector', actor: b.collectorId ?? null, vehicle: b.vehicleId ?? null });
+  if (b.receivedAt) list.push({ step: 'received', at: b.receivedAt, role: 'facility', actor: b.facility ?? null, weight: b.receivedWeight });
+  if (b.treatedAt) list.push({ step: 'treated', at: b.treatedAt, role: 'facility', actor: b.facility ?? null, method: b.treatmentMethod ?? null, certificate: b.certificateRef ?? null });
+  return byTime(list);
+}
+const normEvent = (e) => ({ ...e, at: new Date(e.at).toISOString(), weight: e.weight == null ? undefined : Number(e.weight) });
 
 // Later journey stages (transit, treatment facility, treatment) are optional:
 // bags logged before they existed simply have them as null.
@@ -775,10 +826,16 @@ const toRow = (b) => ({
   received_at: b.receivedAt ?? null, received_weight: b.receivedWeight ?? null, facility: b.facility ?? null,
   treated_at: b.treatedAt ?? null, treatment_method: b.treatmentMethod ?? null, certificate_ref: b.certificateRef ?? null,
   selection_method: b.selectionMethod ?? null,
+  events: b.events,
 });
 const isoOrNull = (v) => (v ? new Date(v).toISOString() : null);
 const numOrNull = (v) => (v == null ? null : Number(v));
-const fromRow = (r) => ({
+const fromRow = (r) => {
+  const b = fromColumns(r);
+  b.events = Array.isArray(r.events) && r.events.length ? byTime(r.events.map(normEvent)) : eventsFromColumns(b);
+  return b;
+};
+const fromColumns = (r) => ({
   id: r.id, clinic: r.clinic, category: r.category, weight: Number(r.weight),
   loggedAt: new Date(r.logged_at).toISOString(), status: r.status,
   collectorWeight: numOrNull(r.collector_weight),
@@ -875,11 +932,14 @@ async function addBag(bag) {
 
 // Returns the updated bag, or null if another device collected it first
 // Facility steps. Each returns the updated bag, or null if another device got there first.
+// Each step writes its new state and appends its event in one update, guarded on the previous state.
 async function receiveBag(bag, weight, facility) {
-  const patch = { receivedAt: new Date().toISOString(), receivedWeight: weight, facility };
+  const at = new Date().toISOString();
+  const patch = { receivedAt: at, receivedWeight: weight, facility,
+    events: withEvent(bag, { step: 'received', at, role: 'facility', actor: facility, weight }) };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ received_at: patch.receivedAt, received_weight: weight, facility })
+    .update({ received_at: at, received_weight: weight, facility, events: patch.events })
     .eq('id', bag.id).eq('status', 'collected').is('received_at', null)
     .select();
   if (error) throw error;
@@ -889,10 +949,12 @@ async function receiveBag(bag, weight, facility) {
 }
 
 async function treatBag(bag, method, certificateRef) {
-  const patch = { treatedAt: new Date().toISOString(), treatmentMethod: method, certificateRef };
+  const at = new Date().toISOString();
+  const patch = { treatedAt: at, treatmentMethod: method, certificateRef,
+    events: withEvent(bag, { step: 'treated', at, role: 'facility', actor: bag.facility ?? null, method, certificate: certificateRef }) };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ treated_at: patch.treatedAt, treatment_method: method, certificate_ref: certificateRef })
+    .update({ treated_at: at, treatment_method: method, certificate_ref: certificateRef, events: patch.events })
     .eq('id', bag.id).not('received_at', 'is', null).is('treated_at', null)
     .select();
   if (error) throw error;
@@ -902,10 +964,12 @@ async function treatBag(bag, method, certificateRef) {
 }
 
 async function collectBag(bag, weight, collectorId = null) {
-  const patch = { status: 'collected', collectorWeight: weight, collectedAt: new Date().toISOString(), collectorId };
+  const at = new Date().toISOString();
+  const patch = { status: 'collected', collectorWeight: weight, collectedAt: at, collectorId,
+    events: withEvent(bag, { step: 'collected', at, role: 'collector', actor: collectorId, weight }) };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ status: 'collected', collector_weight: weight, collected_at: patch.collectedAt, collector_id: collectorId })
+    .update({ status: 'collected', collector_weight: weight, collected_at: at, collector_id: collectorId, events: patch.events })
     .eq('id', bag.id).eq('status', 'logged')
     .select();
   if (error) throw error;
@@ -914,68 +978,113 @@ async function collectBag(bag, weight, collectorId = null) {
   return bag;
 }
 
+// The vehicle leaves for the CBWTF: every bag on board gets the same "in transit" time.
+// Returns how many bags were marked (another device may have marked some already).
+async function dispatchBags(bags, vehicleId, collectorId) {
+  const at = new Date().toISOString();
+  let done = 0;
+  await Promise.all(bags.map(async (bag) => {
+    const actor = collectorId || bag.collectorId || null;
+    const patch = { transitAt: at, vehicleId, events: withEvent(bag, { step: 'in_transit', at, role: 'collector', actor, vehicle: vehicleId }) };
+    if (!cloud) { Object.assign(bag, patch); done++; return; }
+    const { data, error } = await cloud.from('bags')
+      .update({ in_transit_at: at, vehicle_id: vehicleId, events: patch.events })
+      .eq('id', bag.id).eq('status', 'collected').is('in_transit_at', null).is('received_at', null)
+      .select();
+    if (error) throw error;
+    if (data.length) { Object.assign(bag, fromRow(data[0])); done++; }
+  }));
+  save();
+  return done;
+}
+
 function todayAt(h, m, dayOffset = 0) {
   const d = new Date(); d.setDate(d.getDate() + dayOffset); d.setHours(h, m, 0, 0); return d.toISOString();
 }
 function seed() {
-  const CREW = { collectorId: 'COL-02', vehicleId: 'VAN-07' };
-  // Today: [clinic, category, kg, logged h:m, pickup kg or null, collected h:m]
-  const rows = [
-    ['CCC', 'Yellow', 2.4, [8, 45], 2.4,  [11, 5]],
-    ['CCC', 'Red',    1.8, [9, 10], 1.85, [11, 5]],
-    ['CCC', 'White',  0.6, [9, 40], null],            // missed at 11:05 pickup
-    ['CCC', 'Blue',   1.2, [13, 15], null],           // logged after pickup: pending
-    ['MSD', 'Yellow', 3.1, [8, 30], 3.6,  [11, 40]],  // +16% weight mismatch
-    ['MSD', 'Red',    2.2, [9, 50], 2.15, [11, 40]],
-    ['MSD', 'Blue',   0.9, [10, 20], 0.9, [11, 40]],
-    ['HPC', 'White',  0.8, [9, 0],  0.62, [12, 30]],  // -22% weight mismatch
-    ['HPC', 'Yellow', 2.7, [10, 45], 2.75, [12, 30]],
-    ['HPC', 'Red',    1.5, [12, 50], null],
-    ['DRD', 'White',  0.4, [10, 0], null],            // not yet picked up
-    ['DRD', 'Yellow', 1.1, [11, 15], null],
+  // Two collection crews on today's routes; both unload at the same CBWTF.
+  const CREW_A = { collector: 'COL-02', vehicle: 'VAN-07' }; // City Care, Mediscan, HealthPlus, Dr Rao
+  const CREW_B = { collector: 'COL-05', vehicle: 'VAN-11' }; // the other six
+  const CBWTF = 'City CBWTF';
+  const crewOf = (clinic) => (['CCC', 'MSD', 'HPC', 'DRD'].includes(clinic) ? CREW_A : CREW_B);
+  // Times are [hour, minute, days ago]. Each bag goes only as far as its last given stage:
+  // col [kg, h, m, d] collected · trip [h, m, d] left for the CBWTF · rec [kg, h, m, d] received · done [method, certificate, h, m, d] treated
+  const specs = [
+    // ---- today, crew A: collected 11:05–12:30, left 13:00, not yet at the CBWTF
+    { c: 'CCC', cat: 'Yellow', kg: 2.4,  log: [8, 45],  col: [2.4, 11, 5],   trip: [13, 0] },
+    { c: 'CCC', cat: 'Red',    kg: 1.8,  log: [9, 10],  col: [1.85, 11, 5],  trip: [13, 0] },
+    { c: 'CCC', cat: 'White',  kg: 0.6,  log: [9, 40] },                                        // missed at the 11:05 pickup
+    { c: 'CCC', cat: 'Blue',   kg: 1.2,  log: [13, 15] },                                       // logged after pickup
+    { c: 'MSD', cat: 'Yellow', kg: 3.1,  log: [8, 30],  col: [3.6, 11, 40],  trip: [13, 0] },   // +16% at pickup
+    { c: 'MSD', cat: 'Red',    kg: 2.2,  log: [9, 50],  col: [2.15, 11, 40], trip: [13, 0] },
+    { c: 'MSD', cat: 'Blue',   kg: 0.9,  log: [10, 20], col: [0.9, 11, 40],  trip: [13, 0] },
+    { c: 'HPC', cat: 'White',  kg: 0.8,  log: [9, 0],   col: [0.62, 12, 30], trip: [13, 0] },   // −23% at pickup
+    { c: 'HPC', cat: 'Yellow', kg: 2.7,  log: [10, 45], col: [2.75, 12, 30], trip: [13, 0] },
+    { c: 'HPC', cat: 'Red',    kg: 1.5,  log: [12, 50] },
+    { c: 'DRD', cat: 'White',  kg: 0.4,  log: [10, 0] },                                        // no pickup at Dr Rao yet
+    { c: 'DRD', cat: 'Yellow', kg: 1.1,  log: [11, 15] },
+    // ---- today, crew B: collected 10:10–12:05, left 12:20, received 13:30
+    { c: 'SPL', cat: 'Yellow', kg: 3.4,  log: [8, 20],  col: [3.4, 10, 10],  trip: [12, 20], rec: [3.45, 13, 30], done: ['Incineration', 'CBWTF-TC-40341', 15, 10] },
+    { c: 'SPL', cat: 'Red',    kg: 1.2,  log: [8, 50],  col: [1.2, 10, 10],  trip: [12, 20], rec: [1.12, 13, 30] },
+    { c: 'SPL', cat: 'White',  kg: 0.3,  log: [9, 30],  col: [0.3, 10, 10],  trip: [12, 20], rec: [0.3, 13, 30] },
+    { c: 'SCC', cat: 'Yellow', kg: 1.6,  log: [9, 5],   col: [1.6, 10, 40],  trip: [12, 20], rec: [1.9, 13, 30] },   // +19% on arrival
+    { c: 'SCC', cat: 'White',  kg: 0.5,  log: [9, 20],  col: [0.5, 10, 40],  trip: [12, 20], rec: [0.5, 13, 30] },
+    { c: 'SDC', cat: 'White',  kg: 0.7,  log: [9, 45],  col: [0.7, 11, 5],   trip: [12, 20], rec: [0.7, 13, 30] },
+    { c: 'SDC', cat: 'Blue',   kg: 0.4,  log: [10, 10], col: [0.4, 11, 5],   trip: [12, 20], rec: [0.4, 13, 30], done: ['Disinfection + recycling', 'CBWTF-TC-40342', 15, 40] },
+    { c: 'SDC', cat: 'Yellow', kg: 0.9,  log: [12, 30] },
+    { c: 'NPL', cat: 'Yellow', kg: 2.9,  log: [8, 40],  col: [2.9, 11, 30],  trip: [12, 20], rec: [2.85, 13, 30] },
+    { c: 'NPL', cat: 'Red',    kg: 1.4,  log: [9, 15],  col: [1.45, 11, 30], trip: [12, 20], rec: [1.45, 13, 30] },
+    { c: 'NPL', cat: 'Blue',   kg: 0.6,  log: [10, 30], col: [0.6, 11, 30],  trip: [12, 20], rec: [0.6, 13, 30] },
+    { c: 'PDC', cat: 'Red',    kg: 1.1,  log: [9, 10],  col: [1.1, 11, 50],  trip: [12, 20], rec: [1.1, 13, 30] },
+    { c: 'PDC', cat: 'Yellow', kg: 1.9,  log: [10, 5],  col: [1.9, 11, 50],  trip: [12, 20], rec: [1.88, 13, 30] },
+    { c: 'PDC', cat: 'White',  kg: 0.2,  log: [11, 40], col: [0.2, 11, 50],  trip: [12, 20], rec: [0.2, 13, 30] },
+    { c: 'GWC', cat: 'Yellow', kg: 2.2,  log: [9, 30],  col: [2.2, 12, 5],   trip: [12, 20], rec: [2.2, 13, 30] },
+    { c: 'GWC', cat: 'White',  kg: 0.4,  log: [10, 15], col: [0.4, 12, 35] },                  // collected after the van left: waiting to go
+    { c: 'GWC', cat: 'Red',    kg: 0.8,  log: [12, 40] },
+    // ---- earlier days, so every stage and exception has an example
+    { c: 'CCC', cat: 'Yellow', kg: 2.0,  log: [9, 15, 1],  col: [2.05, 11, 10, 1], trip: [13, 0, 1],  rec: [2.05, 14, 10, 1], done: ['Incineration', 'CBWTF-TC-40317', 18, 30, 1] },
+    { c: 'HPC', cat: 'White',  kg: 0.7,  log: [10, 0, 1],  col: [0.7, 12, 40, 1],  trip: [13, 0, 1],  rec: [0.7, 14, 10, 1],  done: ['Autoclave + shredding', 'CBWTF-TC-40322', 19, 5, 1] },
+    { c: 'MSD', cat: 'Red',    kg: 1.6,  log: [9, 30, 1],  col: [1.6, 11, 45, 1],  trip: [13, 0, 1],  rec: [1.58, 14, 10, 1] },                       // awaiting treatment
+    { c: 'DRD', cat: 'Blue',   kg: 0.9,  log: [17, 30, 2] },                                                                                          // not collected >24 h
+    { c: 'NPL', cat: 'Yellow', kg: 2.4,  log: [9, 0, 2],   col: [2.4, 11, 30, 2],  trip: [12, 20, 2] },                                               // left 2 days ago, never received
+    { c: 'SPL', cat: 'Red',    kg: 1.0,  log: [8, 45, 1],  col: [1.0, 10, 10, 1],  trip: [12, 20, 1], rec: [1.0, 13, 30, 1],  done: ['Autoclave + shredding', 'CBWTF-TC-40331', 16, 0, 1] },
+    { c: 'SCC', cat: 'White',  kg: 0.4,  log: [9, 40, 1],  col: [0.4, 10, 40, 1],  trip: [12, 20, 1], rec: [0.4, 13, 30, 1],  done: ['Autoclave + shredding', 'CBWTF-TC-40336', 16, 20, 1] },
+    { c: 'SDC', cat: 'White',  kg: 0.6,  log: [10, 0, 1],  col: [0.6, 11, 5, 1] },                                                                   // collected yesterday, never left
+    { c: 'PDC', cat: 'Yellow', kg: 1.5,  log: [9, 20, 1],  col: [1.5, 11, 50, 1],  trip: [12, 20, 1], rec: [1.45, 13, 30, 1], done: ['Incineration', 'CBWTF-TC-40329', 15, 45, 1] },
+    { c: 'GWC', cat: 'Yellow', kg: 1.8,  log: [9, 35, 1],  col: [1.8, 12, 5, 1],   trip: [12, 20, 1], rec: [1.8, 13, 30, 1],  done: ['Incineration', 'CBWTF-TC-40335', 16, 30, 1] },
   ];
-  // Earlier days, so every journey stage has an example
-  const history = [
-    { clinic: 'CCC', category: 'Yellow', weight: 2.0, logged: [9, 15, -1], collected: [11, 10, -1], collectorWeight: 2.05,
-      received: [15, 40, -1], receivedWeight: 2.05, facility: 'City CBWTF', treated: [18, 30, -1],
-      treatmentMethod: 'Incineration', certificateRef: 'CBWTF-TC-40317' },            // fully complete
-    { clinic: 'HPC', category: 'White', weight: 0.7, logged: [10, 0, -1], collected: [12, 40, -1], collectorWeight: 0.7,
-      received: [16, 10, -1], receivedWeight: 0.7, facility: 'City CBWTF', treated: [19, 5, -1],
-      treatmentMethod: 'Autoclave + shredding', certificateRef: 'CBWTF-TC-40322' },   // fully complete (sharps)
-    { clinic: 'MSD', category: 'Red', weight: 1.6, logged: [9, 30, -1], collected: [11, 45, -1], collectorWeight: 1.6,
-      received: [16, 0, -1], receivedWeight: 1.58, facility: 'City CBWTF' },           // awaiting treatment
-    { clinic: 'DRD', category: 'Blue', weight: 0.9, logged: [17, 30, -2] },              // overdue: not collected >24 h
-  ];
+  const at = ([h, m, d = 0]) => todayAt(h, m, -d);
   const bags = [];
   const used = new Set();
-  const blank = {
-    collectorId: null, vehicleId: null, transitAt: null, receivedAt: null, receivedWeight: null,
-    facility: null, treatedAt: null, treatmentMethod: null, certificateRef: null,
-  };
-  const add = (b) => { b.id = newBagId(b.clinic, used); used.add(b.id); bags.push({ ...blank, ...b }); };
-  for (const [clinic, category, weight, lt, cw, ct] of rows) {
-    add({
-      clinic, category, weight,
-      loggedAt: todayAt(...lt),
-      status: cw == null ? 'logged' : 'collected',
-      collectorWeight: cw,
-      collectedAt: cw == null ? null : todayAt(...ct),
-      ...(cw == null ? {} : CREW),
-    });
-  }
-  for (const h of history) {
-    add({
-      clinic: h.clinic, category: h.category, weight: h.weight,
-      loggedAt: todayAt(...h.logged),
-      status: h.collected ? 'collected' : 'logged',
-      collectorWeight: h.collectorWeight ?? null,
-      collectedAt: h.collected ? todayAt(...h.collected) : null,
-      ...(h.collected ? CREW : {}),
-      receivedAt: h.received ? todayAt(...h.received) : null,
-      receivedWeight: h.receivedWeight ?? null, facility: h.facility ?? null,
-      treatedAt: h.treated ? todayAt(...h.treated) : null,
-      treatmentMethod: h.treatmentMethod ?? null, certificateRef: h.certificateRef ?? null,
-    });
+  for (const s of specs) {
+    const crew = crewOf(s.c);
+    const b = {
+      id: newBagId(s.c, used), clinic: s.c, category: s.cat, weight: s.kg, loggedAt: at(s.log), status: 'logged',
+      collectorWeight: null, collectedAt: null, collectorId: null, vehicleId: null, transitAt: null,
+      receivedAt: null, receivedWeight: null, facility: null, treatedAt: null, treatmentMethod: null, certificateRef: null,
+      events: [{ step: 'logged', at: at(s.log), role: 'clinic', actor: s.c, weight: s.kg }],
+    };
+    used.add(b.id);
+    if (s.col) {
+      const [w, ...time] = s.col;
+      Object.assign(b, { status: 'collected', collectorWeight: w, collectedAt: at(time), collectorId: crew.collector });
+      b.events.push({ step: 'collected', at: b.collectedAt, role: 'collector', actor: crew.collector, weight: w });
+    }
+    if (s.trip) {
+      Object.assign(b, { transitAt: at(s.trip), vehicleId: crew.vehicle });
+      b.events.push({ step: 'in_transit', at: b.transitAt, role: 'collector', actor: crew.collector, vehicle: crew.vehicle });
+    }
+    if (s.rec) {
+      const [w, ...time] = s.rec;
+      Object.assign(b, { receivedAt: at(time), receivedWeight: w, facility: CBWTF });
+      b.events.push({ step: 'received', at: b.receivedAt, role: 'facility', actor: CBWTF, weight: w });
+    }
+    if (s.done) {
+      const [method, cert, ...time] = s.done;
+      Object.assign(b, { treatedAt: at(time), treatmentMethod: method, certificateRef: cert });
+      b.events.push({ step: 'treated', at: b.treatedAt, role: 'facility', actor: CBWTF, method, certificate: cert });
+    }
+    bags.push(b);
   }
   return { bags };
 }
@@ -1038,23 +1147,31 @@ function lastPickupAt(clinic, now = Date.now()) {
 
 const OVERDUE_MS = 24 * 60 * 60 * 1000;
 // Flags shared by the Monitor exceptions and the Track timeline
+// Weight checks at each handover, against the previous weighed checkpoint:
+// collected vs the clinic's weight ("weight"), received at the CBWTF vs pickup ("arrival")
+const HANDOVER_FLAGS = { collected: 'weight', received: 'arrival' };
 function bagFlags(b, now = Date.now()) {
   const flags = {};
-  const diff = weightDiff(b);
-  if (b.collectorWeight != null && Math.abs(diff) > WEIGHT_TOLERANCE) {
-    flags.weight = { pct: pctStr(diff), from: b.weight, to: b.collectorWeight };
-  }
-  if (b.receivedWeight != null && b.collectorWeight) {
-    const d = (b.receivedWeight - b.collectorWeight) / b.collectorWeight;
-    if (Math.abs(d) > WEIGHT_TOLERANCE) {
-      flags.arrival = { pct: pctStr(d), from: b.collectorWeight, to: b.receivedWeight };
+  let prev = null;
+  for (const e of b.events || []) {
+    if (!WEIGHED_STEPS.has(e.step) || e.weight == null) continue;
+    if (prev && prev.weight) {
+      const d = (e.weight - prev.weight) / prev.weight;
+      if (Math.abs(d) > WEIGHT_TOLERANCE) flags[HANDOVER_FLAGS[e.step]] = { pct: pctStr(d), from: prev.weight, to: e.weight };
     }
+    prev = e;
   }
   if (b.status === 'logged') {
     const age = now - Date.parse(b.loggedAt);
     const pickup = lastPickupAt(b.clinic, now);
     if (age > OVERDUE_MS) flags.overdue = { h: Math.floor(age / 3.6e6) };
     else if (pickup && b.loggedAt < pickup) flags.missed = { time: pickup };
+  }
+  // CPCB 24-hour rule: collected waste must reach the CBWTF within a day
+  const collected = stepEvent(b, 'collected');
+  if (collected && !stepEvent(b, 'received')) {
+    const age = now - Date.parse(collected.at);
+    if (age > OVERDUE_MS) flags.stuck = { h: Math.floor(age / 3.6e6) };
   }
   return flags;
 }
@@ -1064,7 +1181,7 @@ function flagText(kind, f, short = false) {
   if (kind === 'weight' || kind === 'arrival') {
     return t(`flag.${kind}${short ? '.short' : ''}`, { pct: f.pct, from: kg(f.from), to: kg(f.to) });
   }
-  if (kind === 'overdue') return t(`flag.overdue${short ? '.short' : ''}`, { h: f.h });
+  if (kind === 'overdue' || kind === 'stuck') return t(`flag.${kind}${short ? '.short' : ''}`, { h: f.h });
   return t('flag.missed', { time: fmtTime(f.time) });
 }
 
@@ -1158,12 +1275,14 @@ $('clinicForm').addEventListener('submit', async (e) => {
   let id;
   btn.disabled = true;
   try {
+    const loggedAt = new Date().toISOString();
     const bag = await addBag({
       id: newBagId(clinic, new Set(db.bags.map((b) => b.id))), clinic, category, weight: w.value,
-      loggedAt: new Date().toISOString(), status: 'logged',
+      loggedAt, status: 'logged',
       collectorWeight: null, collectedAt: null,
       // Display-only note of how staff picked the colour; doesn't change how the bag is handled
       selectionMethod: scanAssist && scanAssist.category === category ? 'camera-assisted' : 'manual',
+      events: [{ step: 'logged', at: loggedAt, role: 'clinic', actor: clinic, weight: w.value }],
     });
     id = bag.id;
   } catch (err) {
@@ -1699,6 +1818,29 @@ async function confirmPickup() {
   render();
 }
 
+// Collected, not yet left for the CBWTF, and not already received there
+const awaitingDeparture = () => db.bags.filter((b) => b.status === 'collected' && !b.transitAt && !b.receivedAt)
+  .sort((a, b) => a.collectedAt.localeCompare(b.collectedAt));
+
+$('dispatchForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('dispatchBtn');
+  const msg = $('dispatchMsg');
+  const bags = awaitingDeparture();
+  if (btn.disabled || !bags.length) return;
+  const vehicleId = $('vehicleId').value.trim().toUpperCase() || null;
+  const collectorId = $('collectorId').value.trim().toUpperCase() || null;
+  try { localStorage.setItem(VEHICLE_KEY, vehicleId || ''); } catch (err) {}
+  btn.disabled = true;
+  let done;
+  try { done = await dispatchBags(bags, vehicleId, collectorId); }
+  catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', t('collector.dispatchErr')); }
+  const at = bags.find((b) => b.transitAt)?.transitAt;
+  if (done) showMsg(msg, 'ok', tn('collector.dispatchOk', done, { time: fmtTime(at) }));
+  else { await refresh(); showMsg(msg, 'warn', t('collector.dispatchNoneLeft')); }
+  render();
+});
+
 $('pendingList').addEventListener('click', (e) => {
   const row = e.target.closest('[data-id]');
   if (!row) return;
@@ -1718,7 +1860,21 @@ function renderCollector() {
       <td class="num">${fmtKg(b.weight)}</td>
       <td class="num">${fmtKg(b.collectorWeight)}</td>
       <td>${fmtTime(b.collectedAt)}</td>
-    </tr>`).join('') : `<tr><td colspan="6" class="empty">${esc(t('collector.noneToday'))}</td></tr>`;
+      <td>${b.transitAt ? fmtTime(b.transitAt) : '—'}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">${esc(t('collector.noneToday'))}</td></tr>`;
+
+  const onBoard = awaitingDeparture();
+  $('dispatchCount').textContent = onBoard.length ? `${tn('unit.bags', onBoard.length)} · ${kg1(sumKg(onBoard, 'collectorWeight'))}` : '';
+  $('dispatchCount').hidden = !onBoard.length;
+  $('dispatchList').innerHTML = onBoard.length ? onBoard.map((b) => `
+    <div class="list-row">
+      <span class="dot ${esc(b.category)}"></span>
+      <div class="body"><b class="mono">${esc(b.id)}</b><small>${esc(clinicName(b.clinic))}</small></div>
+      <div class="right"><b>${kg(b.collectorWeight)}</b><small>${esc(t('collector.collectedAt', { time: fmtTime(b.collectedAt) }))}</small></div>
+    </div>`).join('') : `<div class="empty">${esc(t('collector.dispatchNone'))}</div>`;
+  $('dispatchBtn').disabled = !onBoard.length;
+  setText($('dispatchBtnText'), onBoard.length ? `collector.dispatchBtn.${onBoard.length === 1 ? 'one' : 'other'}` : 'collector.dispatchBtn',
+    onBoard.length ? { n: onBoard.length } : undefined);
 
   const pending = db.bags.filter((b) => b.status === 'logged').sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
   $('pendingList').innerHTML = pending.length ? pending.map((b) => `
@@ -1831,6 +1987,10 @@ document.querySelectorAll('input[data-scan]').forEach((input) => input.addEventL
 }));
 
 // ---------- monitor view ----------
+const ACTIVITY_LOOK = {
+  logged: ['green', 'package'], collected: ['blue', 'truck'], in_transit: ['orange', 'route'],
+  received: ['blue', 'factory'], treated: ['green', 'check'],
+};
 function exceptions() {
   const out = [];
   for (const b of db.bags) {
@@ -1839,6 +1999,7 @@ function exceptions() {
     if (f.missed) out.push({ bag: b, type: 'missed', issue: flagText('missed', f.missed, true) });
     if (f.weight) out.push({ bag: b, type: 'weight', issue: flagText('weight', f.weight, true) });
     if (f.arrival) out.push({ bag: b, type: 'weight', issue: flagText('arrival', f.arrival, true) });
+    if (f.stuck) out.push({ bag: b, type: 'stuck', issue: flagText('stuck', f.stuck, true) });
   }
   return out;
 }
@@ -1887,7 +2048,8 @@ function renderMonitor() {
       <td><span class="pill ${type === 'weight' ? 'orange' : 'red'}">${esc(issue)}</span></td>
     </tr>`).join('') : `<tr><td colspan="6" class="empty">${esc(t('monitor.noEx'))}</td></tr>`;
 
-  const missedBy = new Set(ex.filter((x) => x.type !== 'weight').map((x) => x.bag.clinic));
+  // Only pickups the clinic is waiting on count against it; late CBWTF receipts are the crew's
+  const missedBy = new Set(ex.filter((x) => x.type === 'missed' || x.type === 'overdue').map((x) => x.bag.clinic));
   $('clinicList').innerHTML = CLINICS.map((c) => {
     const bags = today.filter((b) => b.clinic === c.code);
     const done = bags.filter((b) => b.status === 'collected').length;
@@ -1896,28 +2058,32 @@ function renderMonitor() {
       : bags.length ? ['green', t('monitor.pill.cleared')] : ['green', t('monitor.pill.noWaste')];
     return `<div class="list-row">
       <div class="tile green">${icon('hospital')}</div>
-      <div class="body"><b>${esc(c.name)}</b><small>${esc(t('monitor.collectedOf', { done, total: bags.length }))}</small></div>
+      <div class="body"><b>${esc(c.name)}</b><small class="mono reg">${esc(c.reg)}</small><small>${esc(t('monitor.collectedOf', { done, total: bags.length }))}</small></div>
       <div class="right"><b>${kg1(sumKg(bags))}</b><span class="pill ${pill[0]}">${esc(pill[1])}</span></div>
     </div>`;
   }).join('');
 
+  // Latest handovers across all bags, read from their event histories
+  const now = Date.now();
   const events = [];
-  for (const b of today) {
-    if (isToday(b.loggedAt)) events.push({ at: b.loggedAt, kind: 'logged', b });
-    if (b.collectedAt && isToday(b.collectedAt)) events.push({ at: b.collectedAt, kind: 'collected', b });
+  for (const b of db.bags) {
+    for (const e of b.events || []) {
+      if (isToday(e.at) && Date.parse(e.at) <= now) events.push({ e, b }); // sample data can hold later clock times
+    }
   }
-  events.sort((a, b) => b.at.localeCompare(a.at));
-  $('activityList').innerHTML = events.length ? events.slice(0, 6).map(({ at, kind, b }) => kind === 'logged' ? `
+  events.sort((x, y) => Date.parse(y.e.at) - Date.parse(x.e.at));
+  $('activityList').innerHTML = events.length ? events.slice(0, 8).map(({ e, b }) => {
+    const [tile, ic] = ACTIVITY_LOOK[e.step];
+    const detail = e.step === 'logged'
+      ? `${esc(clinicName(b.clinic))} · ${esc(catName(b.category))} · ${kg(b.weight)}${b.selectionMethod === 'camera-assisted' ? ` · ${esc(t('monitor.act.assisted'))}` : ''}`
+      : `<span class="mono">${esc(b.id)}</span>${e.weight != null ? ` · ${kg(e.weight)}` : ''}${e.actor ? ` · ${esc(e.actor)}` : ''}`;
+    return `
     <div class="list-row">
-      <div class="tile green">${icon('package')}</div>
-      <div class="body"><b>${esc(t('monitor.act.logged'))}</b><small>${esc(clinicName(b.clinic))} · ${esc(catName(b.category))} · ${kg(b.weight)}${b.selectionMethod === 'camera-assisted' ? ` · ${esc(t('monitor.act.assisted'))}` : ''}</small></div>
-      <div class="right"><small>${fmtTime(at)}</small></div>
-    </div>` : `
-    <div class="list-row">
-      <div class="tile blue">${icon('truck')}</div>
-      <div class="body"><b>${esc(t('monitor.act.pickup'))}</b><small class="mono">${esc(b.id)}</small><small> · ${kg(b.collectorWeight)}</small></div>
-      <div class="right"><small>${fmtTime(at)}</small></div>
-    </div>`).join('') : `<div class="empty">${esc(t('monitor.noActivity'))}</div>`;
+      <div class="tile ${tile}">${icon(ic)}</div>
+      <div class="body"><b>${esc(t('monitor.act.' + e.step))}</b><small>${detail}</small></div>
+      <div class="right"><small>${fmtTime(e.at)}</small></div>
+    </div>`;
+  }).join('') : `<div class="empty">${esc(t('monitor.noActivity'))}</div>`;
 }
 
 // ---------- track view ----------
@@ -1946,46 +2112,63 @@ document.addEventListener('click', (e) => {
   openTrack(a.dataset.track);
 });
 
-// The journey as five checkpoints, each done / pending / flagged
+// The journey as five checkpoints, each done / pending / flagged, read from the bag's event history.
+// Every step that happened shows the time it was actually scanned.
 function journey(b) {
   const f = bagFlags(b);
-  const collected = b.status === 'collected';
+  const ev = Object.fromEntries(STEPS.map((s) => [s, stepEvent(b, s)]));
+  const latest = STEPS.filter((s) => ev[s]).pop();
   const steps = [];
-  steps.push({
-    label: t('step.logged'), state: 'done', time: b.loggedAt,
-    detail: `${clinicName(b.clinic)} · ${catLabel(b.category)} · ${kg(b.weight)}`,
-  });
-  if (collected) {
-    steps.push({
-      label: t('step.collected'), state: f.weight ? 'flag' : 'done', time: b.collectedAt,
-      reason: f.weight && flagText('weight', f.weight),
-      detail: t('detail.collector', { id: b.collectorId || t('detail.notRecorded'), kg: kg(b.collectorWeight) }),
-    });
+  const done = (step, extra) => ({ label: t(STEP_KEYS[step]), state: 'done', time: ev[step].at, ...extra });
+  const pending = (step, extra) => ({ label: t(STEP_KEYS[step]), state: 'pending', ...extra });
+
+  steps.push(done('logged', { detail: `${clinicName(b.clinic)} · ${catLabel(b.category)} · ${kg(ev.logged.weight ?? b.weight)}` }));
+
+  if (ev.collected) {
+    steps.push(done('collected', {
+      state: f.weight ? 'flag' : 'done', reason: f.weight && flagText('weight', f.weight),
+      detail: t('detail.collector', { id: ev.collected.actor || t('detail.notRecorded'), kg: kg(ev.collected.weight) }),
+    }));
   } else if (f.overdue || f.missed) {
-    steps.push({ label: t('step.collected'), state: 'flag', reason: f.overdue ? flagText('overdue', f.overdue) : flagText('missed', f.missed) });
+    steps.push(pending('collected', { state: 'flag', reason: f.overdue ? flagText('overdue', f.overdue) : flagText('missed', f.missed) }));
   } else {
-    steps.push({ label: t('step.collected'), state: 'pending' });
+    steps.push(pending('collected'));
   }
-  steps.push(collected ? {
-    label: t('step.transit'), state: 'done', time: b.transitAt || b.collectedAt,
-    detail: b.vehicleId ? t('detail.vehicle', { id: b.vehicleId })
-      : b.collectorId ? t('detail.withCollector', { id: b.collectorId }) : t('detail.vehicleNone'),
-  } : { label: t('step.transit'), state: 'pending' });
-  steps.push(b.receivedAt ? {
-    label: t('step.received'), state: f.arrival ? 'flag' : 'done', time: b.receivedAt,
-    reason: f.arrival && flagText('arrival', f.arrival),
-    detail: `${b.receivedWeight != null ? t('detail.onArrival', { kg: kg(b.receivedWeight) }) : t('detail.arrivalNone')}${b.facility ? ' · ' + b.facility : ''}`,
-  } : { label: t('step.received'), state: 'pending' });
-  steps.push(b.treatedAt ? {
-    label: t('step.treated'), state: 'done', time: b.treatedAt,
-    detail: `${b.treatmentMethod ? treatLabel(b.treatmentMethod) : t('detail.methodNone')}${b.certificateRef ? ' · ' + t('detail.certificate', { ref: b.certificateRef }) : ''}`,
-  } : { label: t('step.treated'), state: 'pending' });
+
+  if (ev.in_transit) {
+    const who = ev.in_transit.vehicle ? t('detail.vehicle', { id: ev.in_transit.vehicle })
+      : ev.in_transit.actor ? t('detail.withCollector', { id: ev.in_transit.actor }) : t('detail.vehicleNone');
+    steps.push(done('in_transit', {
+      detail: latest === 'in_transit' ? `${t('detail.transitSince', { time: fmtDateTime(ev.in_transit.at) })} · ${who}` : who,
+    }));
+  } else if (ev.received) {
+    // Arrived without a departure scan: a gap in the chain of custody
+    steps.push(pending('in_transit', { state: 'flag', reason: t('flag.noDeparture') }));
+  } else {
+    steps.push(pending('in_transit'));
+  }
+
+  if (ev.received) {
+    steps.push(done('received', {
+      state: f.arrival ? 'flag' : 'done', reason: f.arrival && flagText('arrival', f.arrival),
+      detail: `${ev.received.weight != null ? t('detail.onArrival', { kg: kg(ev.received.weight) }) : t('detail.arrivalNone')}${ev.received.actor ? ' · ' + ev.received.actor : ''}`,
+    }));
+  } else if (f.stuck) {
+    steps.push(pending('received', { state: 'flag', reason: flagText('stuck', f.stuck) }));
+  } else {
+    steps.push(pending('received'));
+  }
+
+  steps.push(ev.treated ? done('treated', {
+    detail: `${ev.treated.method ? treatLabel(ev.treated.method) : t('detail.methodNone')}${ev.treated.certificate ? ' · ' + t('detail.certificate', { ref: ev.treated.certificate }) : ''}`,
+  }) : pending('treated'));
 
   const status = (f.weight || f.arrival) ? ['red', t('track.status.exception')]
-    : (f.overdue || f.missed) ? ['orange', t('track.status.delayed')] : ['green', t('track.status.onTrack')];
+    : (f.overdue || f.missed || f.stuck) ? ['orange', t('track.status.delayed')] : ['green', t('track.status.onTrack')];
   const reached = steps.filter((st) => st.time).length; // only steps that actually happened
-  return { steps, status, stage: steps[reached - 1].label, reached };
+  return { steps, status, stage: t(STEP_KEYS[latest]), reached };
 }
+const STEP_KEYS = { logged: 'step.logged', collected: 'step.collected', in_transit: 'step.transit', received: 'step.received', treated: 'step.treated' };
 
 // "Loading…" and "No record found" blocks shared by Track and Facility
 const loadingBlock = () => `<div class="track-empty"><b>${esc(t('common.loading'))}</b>${esc(t('common.loadingText'))}</div>`;
@@ -2246,6 +2429,7 @@ async function resetDemo() {
   clearQr();
   clearMsg($('clinicMsg'));
   clearMsg($('collectMsg'));
+  clearMsg($('dispatchMsg'));
   clearMsg($('trackMsg'));
   clearMsg($('facMsg'));
   facBagId = null;
@@ -2305,7 +2489,7 @@ function setLang(code) {
   document.querySelectorAll('.lang-sel').forEach((sel) => { sel.value = code; });
   applyI18n();
   buildCatPick();
-  ['clinicMsg', 'collectMsg', 'trackMsg', 'facMsg', 'labelMsg'].forEach((id) => clearMsg($(id)));
+  ['clinicMsg', 'collectMsg', 'dispatchMsg', 'trackMsg', 'facMsg', 'labelMsg'].forEach((id) => clearMsg($(id)));
   setScanAssist(scanAssist);
   if (assistRedo && !$('assistPanel').hidden) assistRedo();
   updateHeader();
@@ -2318,6 +2502,7 @@ paintIcons();
 $('dateChip').textContent = new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 clearQr();
 try { $('collectorId').value = localStorage.getItem(COLLECTOR_KEY) || ''; } catch (e) {}
+try { $('vehicleId').value = localStorage.getItem(VEHICLE_KEY) || ''; } catch (e) {}
 // A link like ?track=CL-ABC-00231 opens that bag's timeline directly
 const trackParam = new URLSearchParams(location.search).get('track');
 if (trackParam) {
