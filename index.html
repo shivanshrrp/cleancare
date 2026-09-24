@@ -194,6 +194,16 @@
   .redeem-item .btn { padding: 8px 14px; font-size: 13px; }
   .redeem-item .body small.short { color: var(--orange-ink); }
   .redeem-h { font-size: 14px; margin: 18px 0 4px; }
+  .redeem-more { display: flex; gap: 12px; align-items: center; padding: 12px 14px; margin-top: 4px; border: 1px dashed #86efac; border-radius: 12px; background: var(--green-soft); }
+  .redeem-more svg.i { width: 20px; height: 20px; color: var(--green-ink); flex: none; }
+  .redeem-more b { display: block; font-size: 13px; color: var(--green-ink); }
+  .redeem-more small { color: var(--muted); font-size: 12px; }
+  /* inactive clinics */
+  .inactive-card { border-left: 4px solid var(--orange); }
+  .inactive-row .body small { display: block; }
+  .nudge { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 12px 14px; border-radius: 12px;
+    background: var(--orange-light); color: var(--orange-ink); font-size: 14px; font-weight: 500; }
+  .nudge svg.i { width: 18px; height: 18px; flex: none; margin-top: 1px; }
   .role-note { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 11px 14px; border-radius: 12px;
     background: var(--green-light); color: var(--green-ink); font-size: 13px; font-weight: 500; }
   .role-note svg.i { width: 17px; height: 17px; flex: none; margin-top: 1px; }
@@ -514,6 +524,7 @@
     <main class="content">
       <!-- CLINIC -->
       <section id="view-clinic" hidden>
+        <div class="nudge" id="clinicNudge" role="status" hidden></div>
         <div class="grid-main stack">
           <div class="card">
             <div class="card-head"><div><h2 data-i18n="clinic.logBag">Log a waste bag</h2><p data-i18n="clinic.logBagSub">Each saved bag gets a unique ID and QR label</p></div></div>
@@ -636,6 +647,11 @@
             <thead><tr><th data-i18n="col.bagId">Bag ID</th><th data-i18n="col.clinic">Clinic</th><th data-i18n="col.category">Category</th><th class="num" data-i18n="col.clinicKg">Clinic kg</th><th class="num" data-i18n="col.pickupKg">Pickup kg</th><th data-i18n="col.issue">Issue</th></tr></thead>
             <tbody id="exTbody"></tbody>
           </table></div>
+        </div>
+
+        <div class="card inactive-card">
+          <div class="card-head"><div><h2 data-i18n="inactive.title">Inactive clinics</h2><p id="inactiveSub"></p></div><span class="pill orange" id="inactiveCount"></span></div>
+          <div id="inactiveList"></div>
         </div>
 
         <div class="grid-2">
@@ -817,13 +833,31 @@ const CLINIC_POINTS = {
 const PENALTY_POINTS = -25;     // per mis-sorted bag (colour corrected later, or wrong items found in it)
 const POINTS_PER_RUPEE = 10;    // reference only: roughly 10 points ≈ ₹1 of redemption value
 const GOVT_FUNDED_SHARE = 0.6;  // share of issued points funded by government; the CBWTF funds the rest
-const REWARD_CATALOGUE = [      // point costs are placeholders, adjustable
-  { key: 'cotton', points: 150 },
-  { key: 'gauze', points: 200 },
-  { key: 'syringes', points: 400 },
-  { key: 'gloves', points: 500 },
-  { key: 'medkit', points: 1200 },
+// Supplies clinics can request with points. This list is meant to grow: to add an item, add one line.
+// `id` is stored with each redemption (keep it unique and don't change it); `name` can be a plain string or
+// { en, hi, mr } (missing languages fall back to English). Point costs are placeholders, adjustable.
+const REWARD_CATALOGUE = [
+  { id: 'cotton',     pointCost: 150,  name: { en: 'Cotton roll', hi: 'रुई का रोल', mr: 'कापसाचा रोल' } },
+  { id: 'gauze',      pointCost: 200,  name: { en: 'Gauze pads', hi: 'गॉज़ पैड', mr: 'गॉझ पॅड' } },
+  { id: 'antiseptic', pointCost: 250,  name: { en: 'Antiseptic solution (500 ml)', hi: 'एंटीसेप्टिक घोल (500 ml)', mr: 'जंतुनाशक द्रावण (500 ml)' } },
+  { id: 'sanitiser',  pointCost: 250,  name: { en: 'Hand sanitiser (500 ml)', hi: 'हैंड सैनिटाइज़र (500 ml)', mr: 'हँड सॅनिटायझर (500 ml)' } },
+  { id: 'masks',      pointCost: 300,  name: { en: 'Surgical masks (box of 50)', hi: 'सर्जिकल मास्क (50 का डिब्बा)', mr: 'सर्जिकल मास्क (50 चा खोका)' } },
+  { id: 'aprons',     pointCost: 350,  name: { en: 'Disposable aprons (pack of 10)', hi: 'डिस्पोज़ेबल एप्रन (10 का पैक)', mr: 'डिस्पोजेबल ॲप्रन (10 चे पॅक)' } },
+  { id: 'syringes',   pointCost: 400,  name: { en: 'Syringes (pack of 10)', hi: 'सिरिंज (10 का पैक)', mr: 'सिरिंज (10 चे पॅक)' } },
+  { id: 'gloves',     pointCost: 500,  name: { en: 'Gloves (box)', hi: 'दस्ताने (डिब्बा)', mr: 'हातमोजे (खोका)' } },
+  { id: 'medkit',     pointCost: 1200, name: { en: 'Basic medicine kit', hi: 'बेसिक दवा किट', mr: 'मूलभूत औषध किट' } },
 ];
+const catalogueItem = (id) => REWARD_CATALOGUE.find((x) => x.id === id);
+const itemName = (id) => {
+  const it = catalogueItem(id);
+  if (!it) return id; // an item since removed from the list keeps showing in history by its id
+  return typeof it.name === 'string' ? it.name : it.name[lang] || it.name.en;
+};
+
+// ---------- inactive clinics ----------
+// A visibility nudge, never a penalty: a clinic that hasn't logged a bag for this many days is listed on
+// the Monitor and sees a friendly reminder. It doesn't change points.
+const INACTIVITY_DAYS = 3;
 
 // ---------- language ----------
 // All interface text lives in translations.js. t('key', {name: value}) returns it in the chosen
@@ -1433,6 +1467,19 @@ function leaderboard() {
   return rows;
 }
 
+// When each clinic last logged a bag, and whether that's longer ago than INACTIVITY_DAYS (null = never logged)
+function clinicActivity(code, now = Date.now()) {
+  let last = null;
+  for (const b of db.bags) {
+    if (b.clinic !== code || Date.parse(b.loggedAt) > now) continue; // sample data can hold later clock times
+    if (!last || b.loggedAt > last) last = b.loggedAt;
+  }
+  const days = last == null ? null : Math.floor((now - Date.parse(last)) / 86400000);
+  return { last, days, inactive: last == null || now - Date.parse(last) > INACTIVITY_DAYS * 86400000 };
+}
+const inactiveClinics = () => CLINICS.map((c) => ({ ...c, ...clinicActivity(c.code) })).filter((c) => c.inactive)
+  .sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity)); // never logged first, then the longest quiet
+
 function penaltyText(e) {
   return e.step === 'reclassified'
     ? t('penalty.reclassified', { from: catName(e.from), to: catName(e.to), pts: fmtPts(Math.abs(e.points)) })
@@ -2010,6 +2057,12 @@ $('clinicTbody').addEventListener('click', (e) => {
 function renderClinic() {
   const code = $('clinicSel').value;
   renderRewards(code);
+  // A friendly reminder only; being inactive never costs points
+  const act = clinicActivity(code);
+  $('clinicNudge').hidden = !act.inactive;
+  if (act.inactive) {
+    $('clinicNudge').innerHTML = `${icon('clock')}<span>${esc(act.days == null ? t('nudge.never') : tn('nudge.days', act.days))}</span>`;
+  }
   $('clinicName').textContent = clinicName(code);
   const bags = db.bags.filter((b) => b.clinic === code && isToday(b.loggedAt))
     .sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
@@ -2077,17 +2130,17 @@ function renderRedeem() {
   const code = $('clinicSel').value;
   const { balance } = clinicPoints(code);
   $('redeemBalance').innerHTML = `${esc(clinicName(code))} · ${esc(t('redeem.balance', { pts: '\u0001' })).replace('\u0001', `<b>${fmtPts(balance)}</b>`)}`;
-  $('redeemList').innerHTML = REWARD_CATALOGUE.map((it) => {
-    const short = it.points - balance;
+  $('redeemList').innerHTML = REWARD_CATALOGUE.slice().sort((a, b) => a.pointCost - b.pointCost).map((it) => {
+    const short = it.pointCost - balance;
     return `<div class="redeem-item">
-      <div class="body">${esc(t('reward.item.' + it.key))}<small>${esc(t('redeem.cost', { pts: fmtPts(it.points), rs: rupees(it.points) }))}</small>
+      <div class="body">${esc(itemName(it.id))}<small>${esc(t('redeem.cost', { pts: fmtPts(it.pointCost), rs: rupees(it.pointCost) }))}</small>
         ${short > 0 ? `<small class="short">${esc(t('redeem.short', { pts: fmtPts(short) }))}</small>` : ''}</div>
-      <button class="btn" type="button" data-redeem="${it.key}"${short > 0 ? ' disabled' : ''}>${esc(t('redeem.button'))}</button>
+      <button class="btn" type="button" data-redeem="${esc(it.id)}"${short > 0 ? ' disabled' : ''}>${esc(t('redeem.button'))}</button>
     </div>`;
-  }).join('');
+  }).join('') + `<div class="redeem-more">${icon('gift')}<div><b>${esc(t('redeem.moreTitle'))}</b><small>${esc(t('redeem.more'))}</small></div></div>`;
   const mine = (db.redemptions || []).filter((r) => r.clinic === code).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
   $('redeemHistory').innerHTML = mine.length ? mine.map((r) => `
-    <div class="redeem-item"><div class="body">${esc(t('reward.item.' + r.item))}<small>${fmtDateTime(r.requestedAt)} · ${esc(signedPts(-r.points))}</small></div>
+    <div class="redeem-item"><div class="body">${esc(itemName(r.item))}<small>${fmtDateTime(r.requestedAt)} · ${esc(signedPts(-r.points))}</small></div>
       <span class="pill orange">${esc(t('redeem.status.' + r.status))}</span></div>`).join('')
     : `<div class="rw-empty">${esc(t('redeem.none'))}</div>`;
 }
@@ -2099,15 +2152,15 @@ $('redeemList').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-redeem]');
   if (!btn || btn.disabled) return;
   const code = $('clinicSel').value;
-  const it = REWARD_CATALOGUE.find((x) => x.key === btn.dataset.redeem);
-  const name = t('reward.item.' + it.key);
+  const it = catalogueItem(btn.dataset.redeem);
+  const name = itemName(it.id);
   const msg = $('redeemMsg');
-  if (clinicPoints(code).balance < it.points) return showMsg(msg, 'err', t('redeem.errShort', { item: name }));
+  if (clinicPoints(code).balance < it.pointCost) return showMsg(msg, 'err', t('redeem.errShort', { item: name }));
   btn.disabled = true;
-  try { await addRedemption(code, it.key, it.points); }
+  try { await addRedemption(code, it.id, it.pointCost); }
   catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', t('redeem.err')); }
   render();
-  showMsg(msg, 'ok', t('redeem.ok', { item: name, pts: fmtPts(it.points), bal: fmtPts(clinicPoints(code).balance) }));
+  showMsg(msg, 'ok', t('redeem.ok', { item: name, pts: fmtPts(it.pointCost), bal: fmtPts(clinicPoints(code).balance) }));
 });
 
 // ---------- leaderboard ----------
@@ -2466,6 +2519,24 @@ function renderMonitor() {
 
   renderFunding();
   renderMissorts();
+  renderInactive();
+}
+
+// Clinics with no bag logged for INACTIVITY_DAYS: absence of activity, kept apart from the exceptions table
+function renderInactive() {
+  const list = inactiveClinics();
+  $('inactiveSub').textContent = t('inactive.sub', { days: INACTIVITY_DAYS });
+  $('inactiveCount').textContent = list.length || '';
+  $('inactiveCount').hidden = !list.length;
+  $('inactiveList').innerHTML = list.length ? list.map((c) => {
+    const severe = c.days == null || c.days >= INACTIVITY_DAYS * 2;
+    return `<div class="list-row inactive-row">
+      <div class="tile ${severe ? 'red' : 'orange'}">${icon('clock')}</div>
+      <div class="body"><b>${esc(c.name)}</b><small class="mono reg">${esc(c.reg)}</small>
+        <small>${c.last ? esc(t('inactive.lastOn', { date: fmtDateTime(c.last) })) : esc(t('inactive.noBags'))}</small></div>
+      <div class="right"><span class="pill ${severe ? 'red' : 'orange'}">${esc(c.days == null ? t('inactive.never') : tn('inactive.days', c.days))}</span></div>
+    </div>`;
+  }).join('') : `<div class="empty">${esc(t('inactive.none', { days: INACTIVITY_DAYS }))}</div>`;
 }
 
 // Points issued this month for verified bags, and who funds them (reference ₹ value only; no cash is paid)

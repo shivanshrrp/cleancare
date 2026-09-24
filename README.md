@@ -8,7 +8,7 @@ https://shivanshrrp.github.io/cleancare/
 | **Clinic** | **Rewards** card with the clinic's point balance, this month's points by colour, deductions and leaderboard rank; **Redeem points** for supplies. Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label. **Not sure? Scan an item** photographs a loose item and suggests its bag colour (staff confirm before saving) |
 | **Collector** | For the collection crew. Scan or type the bag ID at pickup and record the weight (and flag a wrong colour or contamination), then **Start trip** when the vehicle leaves: every bag on board is marked *In transit* at that time, with the vehicle number |
 | **Facility** | For staff at the treatment plant (CBWTF), not the collector. Confirm each bag on arrival with its weight and a colour check, then record the treatment method and certificate |
-| **Monitor** | Today's counts, activity and exceptions: bags missed at pickup, uncollected after 24 h, not received at the CBWTF within 24 h of pickup (the CPCB rule), or with a weight change over 10% at any handover. Each clinic is listed with its registration code. Also the month's reward points split into government- and CBWTF-funded shares, and a table of mis-sorted bags |
+| **Monitor** | Today's counts, activity and exceptions: bags missed at pickup, uncollected after 24 h, not received at the CBWTF within 24 h of pickup (the CPCB rule), or with a weight change over 10% at any handover. Each clinic is listed with its registration code. Also the month's reward points split into government- and CBWTF-funded shares, a table of mis-sorted bags, and a separate list of **inactive clinics** (no bag logged in `INACTIVITY_DAYS`, or never) |
 | **Leaderboard** | Clinics ranked by this month's points; only names and totals, top 3 highlighted, your clinic marked |
 | **Track** | A parcel-style timeline for any bag, showing the date and time of every checkpoint; links like `?track=CL-ABC-00231` open it directly |
 
@@ -82,7 +82,8 @@ reference (`POINTS_PER_RUPEE`, 10 points ≈ ₹1). All the numbers are constant
 | `CLINIC_POINTS` | Points per verified kg: White 60, Yellow 50, Red 30, Blue 20 (placeholders) |
 | `PENALTY_POINTS` | −25 per mis-sorted bag |
 | `GOVT_FUNDED_SHARE` | Share of issued points funded by government (0.6); the CBWTF funds the rest |
-| `REWARD_CATALOGUE` | Supplies and their point costs (placeholders) |
+| `REWARD_CATALOGUE` | Supplies clinics can request, a growing list of `{ id, pointCost, name }`. Add an item with one line; `name` can be plain text or `{ en, hi, mr }` |
+| `INACTIVITY_DAYS` | Days without a logged bag before a clinic shows as inactive (3). A reminder only: it never costs points |
 
 Points are never stored. They're worked out from each bag's events every time: a bag earns kg (as weighed at the
 CBWTF) × the rate for its colour once it has been logged, collected and received at the CBWTF with the weight at each
