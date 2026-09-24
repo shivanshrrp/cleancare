@@ -134,6 +134,66 @@
   .list-row .right { text-align: right; }
   .list-row small.reg { display: block; font-size: 11px; letter-spacing: .02em; }
   .dispatch-form { margin-top: 14px; }
+  /* colour check at pickup / receipt */
+  .sort-check { align-items: end; }
+  .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 10px 0; cursor: pointer; }
+  .check-row input { width: 18px; height: 18px; accent-color: var(--red); flex: none; }
+  .tl-note { margin-top: 6px; color: var(--orange-ink); font-size: 13px; font-weight: 600; }
+  /* rewards */
+  .rw-top { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .rw-box { border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .rw-box .l { color: var(--muted); font-size: 12px; font-weight: 500; display: block; }
+  .rw-balance { background: var(--green-soft); border-color: #bbf7d0; }
+  .rw-balance b { display: block; font-size: 40px; line-height: 1.1; font-weight: 700; color: var(--green-ink); letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .rw-balance small, .rw-rank small { color: var(--muted); font-size: 12px; }
+  .rw-rank b { display: block; font-size: 22px; font-weight: 700; margin: 6px 0 4px; }
+  .rw-rank a { font-size: 13px; font-weight: 600; color: var(--green-ink); }
+  .rw-h { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 14px; margin: 4px 0 6px; }
+  .rw-h b { font-variant-numeric: tabular-nums; color: var(--green-ink); }
+  .rw-h.ded b { color: var(--red-ink); }
+  .rw-section { margin-bottom: 16px; }
+  .rw-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; }
+  .rw-row .body { flex: 1; min-width: 0; }
+  .rw-row .body small { display: block; color: var(--muted); font-size: 12px; }
+  .rw-row .pts { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rw-row.ded .pts { color: var(--red-ink); }
+  .rw-row.ded .body b { color: var(--orange-ink); font-weight: 600; }
+  .rw-empty { color: var(--muted); font-size: 13px; padding: 8px 0; border-top: 1px solid var(--border); }
+  .rw-rule { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+  /* leaderboard */
+  .lb-row { display: flex; align-items: center; gap: 14px; padding: 12px 12px; border-radius: 12px; border: 1px solid transparent; }
+  .lb-row + .lb-row { margin-top: 4px; }
+  .lb-rank { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: var(--slate-light); color: #475569; flex: none; }
+  .lb-rank svg.i { width: 17px; height: 17px; }
+  .lb-row.top1 .lb-rank { background: #fde68a; color: #92400e; }
+  .lb-row.top2 .lb-rank { background: #e2e8f0; color: #334155; }
+  .lb-row.top3 .lb-rank { background: #fed7aa; color: #9a3412; }
+  .lb-row.top1, .lb-row.top2, .lb-row.top3 { background: #fafaf9; }
+  .lb-row.me { background: var(--green-soft); border-color: #86efac; }
+  .lb-name { flex: 1; min-width: 0; font-weight: 600; font-size: 14px; }
+  .lb-name small { display: block; color: var(--muted); font-weight: 500; font-size: 12px; }
+  .lb-pts { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .lb-pts small { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .board-note { color: var(--muted); font-size: 12px; margin: 14px 0 0; }
+  /* monitor: funding split */
+  .fund-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .fund-grid .rw-box b { display: block; font-size: 22px; font-weight: 700; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .fund-grid .rw-box small { color: var(--muted); font-size: 12px; }
+  .fund-line { margin: 14px 0 0; font-size: 13px; font-weight: 600; }
+  .fund-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: var(--slate-light); }
+  .fund-bar i { display: block; }
+  /* redeem */
+  .modal-wide { max-width: 520px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .modal-head h2 { margin: 0; }
+  .redeem-balance { margin: 0 0 12px !important; }
+  .redeem-balance b { color: var(--green-ink); font-size: 15px; }
+  .redeem-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--border); }
+  .redeem-item .body { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+  .redeem-item .body small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+  .redeem-item .btn { padding: 8px 14px; font-size: 13px; }
+  .redeem-item .body small.short { color: var(--orange-ink); }
+  .redeem-h { font-size: 14px; margin: 18px 0 4px; }
   .role-note { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 11px 14px; border-radius: 12px;
     background: var(--green-light); color: var(--green-ink); font-size: 13px; font-weight: 500; }
   .role-note svg.i { width: 17px; height: 17px; flex: none; margin-top: 1px; }
@@ -328,6 +388,7 @@
   /* ---------- responsive ---------- */
   @media (max-width: 1100px) {
     .stats, .cats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fund-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grid-2, .grid-main { grid-template-columns: 1fr; }
     .cat-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
@@ -342,7 +403,7 @@
     .side-foot { display: none; }
 
     /* bottom tab bar */
-    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
+    .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(16,24,20,.05); overflow: visible; }
     .nav-label { display: none; }
     .nav-item { position: relative; flex-direction: column; justify-content: center; gap: 3px; margin: 0; padding: 7px 2px; min-height: 52px; font-size: 11px; text-align: center; border-radius: 12px; }
     .nav-item svg.i { width: 22px; height: 22px; }
@@ -367,6 +428,9 @@
   }
   @media (max-width: 600px) {
     .stats { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .rw-top { grid-template-columns: 1fr; gap: 10px; }
+    .fund-grid { gap: 10px; }
+    .sort-check { grid-template-columns: 1fr; }
     .stat { padding: 14px; flex-direction: column; gap: 10px; }
     .stat .n { font-size: 26px; }
     .cats { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -419,6 +483,7 @@
       <button class="nav-item" data-role="facility"><span data-icon="factory"></span><span class="txt"><span data-i18n="role.facility">Facility</span><span class="sub" data-i18n="role.facility.sub">Receive &amp; treat</span></span><span class="count orange" id="navFacility"></span></button>
       <button class="nav-item" data-role="monitor"><span data-icon="dashboard"></span><span class="txt"><span data-i18n="role.monitor">Monitor</span><span class="sub" data-i18n="role.monitor.sub">Dashboard &amp; exceptions</span></span><span class="count red" id="navEx"></span></button>
       <button class="nav-item" data-role="track"><span data-icon="route"></span><span class="txt"><span data-i18n="role.track">Track</span><span class="sub" data-i18n="role.track.sub">Follow a bag's journey</span></span></button>
+      <button class="nav-item" data-role="leaderboard"><span data-icon="trophy"></span><span class="txt"><span data-i18n="role.leaderboard">Leaderboard</span><span class="sub" data-i18n="role.leaderboard.sub">Clinic rankings this month</span></span></button>
     </nav>
     <div class="side-foot">
       <div class="status-card">
@@ -481,6 +546,11 @@
             <a class="btn ghost track-link" id="trackThisBtn" href="#" hidden><span data-icon="route"></span><span data-i18n="common.trackThis">Track this bag</span></a>
           </div>
         </div>
+        <div class="card rewards-card">
+          <div class="card-head"><div><h2 data-i18n="rewards.title">Rewards</h2><p data-i18n="rewards.sub">Points for verified bags, spent on healthcare supplies. No money changes hands.</p></div>
+            <button class="btn" type="button" id="redeemBtn"><span data-icon="gift"></span><span data-i18n="rewards.redeem">Redeem points</span></button></div>
+          <div id="rewardsBody"></div>
+        </div>
         <div class="card">
           <div class="card-head"><div><h2 data-i18n="clinic.today">Today's bags</h2><p id="clinicName"></p></div><span class="pill green" id="clinicCount"></span></div>
           <div class="tbl-wrap"><table>
@@ -512,6 +582,10 @@
                 <label class="field"><span data-i18n="collector.weight">Weight at pickup (kg)</span><input id="collectWeight" type="number" step="0.01" min="0" inputmode="decimal" placeholder="e.g. 2.5" data-i18n-ph="common.weightPh"></label>
               </div>
               <label class="field"><span><span data-i18n="collector.id">Collector ID</span> <em data-i18n="collector.idNote">(optional, remembered on this device)</em></span><input id="collectorId" type="text" placeholder="e.g. COL-02" data-i18n-ph="collector.idPh" autocomplete="off" autocapitalize="characters"></label>
+              <div class="form-row sort-check">
+                <label class="field"><span data-i18n="check.colour">Bag colour check</span><select id="collectCheck"></select></label>
+                <label class="check-row"><input type="checkbox" id="collectContam"><span data-i18n="check.contam">Wrong items mixed in (contamination)</span></label>
+              </div>
               <div class="actions"><button class="btn" type="submit"><span data-icon="check"></span><span data-i18n="collector.submit">Confirm Pickup</span></button></div>
             </form>
             <div id="collectMsg" class="msg"></div>
@@ -574,6 +648,18 @@
             <div id="activityList"></div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2 data-i18n="funding.title">Reward points this month</h2><p id="fundingSub"></p></div></div>
+          <div id="fundingBody"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 data-i18n="missort.title">Mis-sorted bags</h2><p data-i18n="missort.sub">Colour corrections and contamination found at pickup or at the CBWTF, newest first, so you can see which clinics need guidance</p></div></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th data-i18n="col.clinic">Clinic</th><th data-i18n="col.bagId">Bag ID</th><th data-i18n="missort.col.logged">Logged as</th><th data-i18n="missort.col.actual">Actual</th><th class="num" data-i18n="missort.col.points">Points</th><th data-i18n="missort.col.found">Found by</th><th data-i18n="col.date">Date</th></tr></thead>
+            <tbody id="missortTbody"></tbody>
+          </table></div>
+        </div>
       </section>
 
       <!-- FACILITY -->
@@ -613,6 +699,15 @@
         </div>
       </section>
 
+      <!-- LEADERBOARD -->
+      <section id="view-leaderboard" hidden>
+        <div class="card">
+          <div class="card-head"><div><h2 data-i18n="board.title">This month's ranking</h2><p id="boardSub"></p></div></div>
+          <div id="boardList"></div>
+          <p class="board-note" data-i18n="board.note">Points come only from verified bags. Other clinics see names and totals only.</p>
+        </div>
+      </section>
+
       <!-- TRACK -->
       <section id="view-track" hidden>
         <div class="card">
@@ -648,6 +743,16 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="redeemModal" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="redeemTitle">
+    <div class="modal-head"><h2 id="redeemTitle" data-i18n="redeem.title">Redeem points</h2><button class="assist-close" type="button" id="redeemClose" data-i18n="assist.close">Close</button></div>
+    <p class="redeem-balance" id="redeemBalance"></p>
+    <div id="redeemList"></div>
+    <div id="redeemMsg" class="msg"></div>
+    <h3 class="redeem-h" data-i18n="redeem.history">Your redemptions</h3>
+    <div id="redeemHistory"></div>
+  </div>
+</div>
 <div class="modal-backdrop" id="resetModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
     <h2 id="resetTitle" data-i18n="reset.title">Reset the demo?</h2>
@@ -660,7 +765,8 @@
 </div>
 
 <script>
-const STORE_KEY = 'bmw-demo-v2'; // v2: 10 clinics and an event history on every bag
+const STORE_KEY = 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
+const CLINIC_KEY = 'cleancare-clinic';
 const VEHICLE_KEY = 'cleancare-vehicle-id';
 const ROLE_KEY = 'bmw-demo-role';
 const COLLECTOR_KEY = 'cleancare-collector-id';
@@ -698,6 +804,26 @@ const TREATMENT_KEYS = {
   'Encapsulation': 'treat.encapsulation',
 };
 const WEIGHT_TOLERANCE = 0.10;
+
+// ---------- reward points ----------
+// Clinics earn points, never money: points are spent on healthcare supplies. ₹ figures are a reference only.
+const CLINIC_POINTS = {
+  White: 60,   // sharps: highest hazard
+  Yellow: 50,  // infectious / pathological: high treatment cost
+  Red: 30,     // contaminated plastics: moderate, some recycling value
+  Blue: 20,    // glass / metal: lowest hazard and cost
+};
+// Points per verified kg. Placeholder values, adjustable; the order reflects hazard and treatment cost, not weight.
+const PENALTY_POINTS = -25;     // per mis-sorted bag (colour corrected later, or wrong items found in it)
+const POINTS_PER_RUPEE = 10;    // reference only: roughly 10 points ≈ ₹1 of redemption value
+const GOVT_FUNDED_SHARE = 0.6;  // share of issued points funded by government; the CBWTF funds the rest
+const REWARD_CATALOGUE = [      // point costs are placeholders, adjustable
+  { key: 'cotton', points: 150 },
+  { key: 'gauze', points: 200 },
+  { key: 'syringes', points: 400 },
+  { key: 'gloves', points: 500 },
+  { key: 'medkit', points: 1200 },
+];
 
 // ---------- language ----------
 // All interface text lives in translations.js. t('key', {name: value}) returns it in the chosen
@@ -761,6 +887,8 @@ const ICONS = {
   factory: '<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>',
   printer: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
 const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -783,6 +911,7 @@ function load() {
     const data = JSON.parse(localStorage.getItem(STORE_KEY));
     if (data && Array.isArray(data.bags)) {
       data.bags.forEach((b) => { if (!Array.isArray(b.events)) b.events = eventsFromColumns(b); });
+      if (!Array.isArray(data.redemptions)) data.redemptions = [];
       return data;
     }
   } catch (e) {}
@@ -802,7 +931,25 @@ const STEPS = ['logged', 'collected', 'in_transit', 'received', 'treated'];
 const WEIGHED_STEPS = new Set(['logged', 'collected', 'received']);
 const stepEvent = (b, step) => (b.events || []).find((e) => e.step === step) || null;
 const byTime = (list) => list.slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-const withEvent = (b, e) => byTime([...(b.events || []), e]);
+const withEvent = (b, ...list) => byTime([...(b.events || []), ...list]);
+
+// Mis-sorts found at a later checkpoint are events too, each carrying its own (negative) points:
+//   reclassified  {from, to}  the collector or CBWTF corrected the bag's colour
+//   contamination {category}  wrong items were mixed into the bag
+const PENALTY_STEPS = new Set(['reclassified', 'contamination']);
+function sortCheckEvents(bag, check, at, role, actor) {
+  const out = [];
+  if (check.category && check.category !== bag.category) {
+    out.push({ step: 'reclassified', at, role, actor, from: bag.category, to: check.category, points: PENALTY_POINTS });
+  }
+  if (check.contaminated) {
+    out.push({ step: 'contamination', at, role, actor, category: check.category || bag.category, points: PENALTY_POINTS });
+  }
+  return out;
+}
+const penaltyEvents = (b) => (b.events || []).filter((e) => PENALTY_STEPS.has(e.step));
+// The colour the clinic logged, even if it was corrected later
+const loggedCategory = (b) => (b.events || []).find((e) => e.step === 'reclassified')?.from || b.category;
 
 // Bags saved before the event history existed: rebuild it from their stage columns
 function eventsFromColumns(b) {
@@ -865,11 +1012,30 @@ async function fetchBags() {
   return data.map(fromRow);
 }
 
+// Redemptions: a clinic spending points on supplies (the only reward data that isn't a bag event)
+const fromRedemption = (r) => ({ id: r.id, clinic: r.clinic, item: r.item, points: Number(r.points),
+  requestedAt: new Date(r.requested_at).toISOString(), status: r.status });
+async function fetchRedemptions() {
+  const { data, error } = await cloud.from('redemptions').select('*').order('requested_at');
+  if (error) { console.warn('Redemptions unavailable:', error.message); return db.redemptions || []; }
+  return data.map(fromRedemption);
+}
+async function addRedemption(clinic, item, points) {
+  const r = { clinic, item, points, requestedAt: new Date().toISOString(), status: 'Requested' };
+  if (!cloud) { r.id = 'local-' + Date.now(); db.redemptions.push(r); save(); return r; }
+  const { data, error } = await cloud.from('redemptions')
+    .insert({ clinic, item, points, requested_at: r.requestedAt, status: r.status }).select();
+  if (error) throw error;
+  const saved = fromRedemption(data[0]);
+  db.redemptions.push(saved);
+  return saved;
+}
+
 // Pull the latest bags from the server and redraw
 async function refresh() {
   if (!cloud) return;
   try {
-    db.bags = await fetchBags();
+    [db.bags, db.redemptions] = await Promise.all([fetchBags(), fetchRedemptions()]);
     dataReady = true;
     $('offlineModal').hidden = true;
     setSync('ok', 'sync.live', 'sync.liveSub');
@@ -889,7 +1055,7 @@ function refreshSoon() {
 async function startCloud() {
   setSync('off', 'sync.connecting', 'sync.connectingSub');
   try {
-    db.bags = await fetchBags();
+    [db.bags, db.redemptions] = await Promise.all([fetchBags(), fetchRedemptions()]);
     if (!db.bags.length) await cloudReset();
     dataReady = true;
     setSync('ok', 'sync.live', 'sync.liveSub');
@@ -903,6 +1069,7 @@ async function startCloud() {
   render();
   cloud.channel('bags-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'bags' }, refreshSoon)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, refreshSoon)
     .subscribe();
   // Backstop in case realtime is unavailable on the network
   setInterval(refresh, 20000);
@@ -913,10 +1080,17 @@ async function startCloud() {
 async function cloudReset() {
   const del = await cloud.from('bags').delete().neq('id', '');
   if (del.error) throw del.error;
-  const fresh = seed().bags;
-  const ins = await cloud.from('bags').insert(fresh.map(toRow));
+  const fresh = seed();
+  const ins = await cloud.from('bags').insert(fresh.bags.map(toRow));
   if (ins.error) throw ins.error;
-  db.bags = fresh;
+  db.bags = fresh.bags;
+  // Redemptions reset with the bags, so balances stay consistent
+  const delR = await cloud.from('redemptions').delete().neq('clinic', '');
+  if (delR.error) throw delR.error;
+  const insR = await cloud.from('redemptions').insert(fresh.redemptions.map((r) =>
+    ({ clinic: r.clinic, item: r.item, points: r.points, requested_at: r.requestedAt, status: r.status }))).select();
+  if (insR.error) throw insR.error;
+  db.redemptions = insR.data.map(fromRedemption);
 }
 
 async function addBag(bag) {
@@ -933,13 +1107,15 @@ async function addBag(bag) {
 // Returns the updated bag, or null if another device collected it first
 // Facility steps. Each returns the updated bag, or null if another device got there first.
 // Each step writes its new state and appends its event in one update, guarded on the previous state.
-async function receiveBag(bag, weight, facility) {
+async function receiveBag(bag, weight, facility, check = {}) {
   const at = new Date().toISOString();
-  const patch = { receivedAt: at, receivedWeight: weight, facility,
-    events: withEvent(bag, { step: 'received', at, role: 'facility', actor: facility, weight }) };
+  const category = check.category || bag.category;
+  const patch = { receivedAt: at, receivedWeight: weight, facility, category,
+    events: withEvent(bag, { step: 'received', at, role: 'facility', actor: facility, weight },
+      ...sortCheckEvents(bag, check, at, 'facility', facility)) };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ received_at: at, received_weight: weight, facility, events: patch.events })
+    .update({ received_at: at, received_weight: weight, facility, category, events: patch.events })
     .eq('id', bag.id).eq('status', 'collected').is('received_at', null)
     .select();
   if (error) throw error;
@@ -963,13 +1139,15 @@ async function treatBag(bag, method, certificateRef) {
   return bag;
 }
 
-async function collectBag(bag, weight, collectorId = null) {
+async function collectBag(bag, weight, collectorId = null, check = {}) {
   const at = new Date().toISOString();
-  const patch = { status: 'collected', collectorWeight: weight, collectedAt: at, collectorId,
-    events: withEvent(bag, { step: 'collected', at, role: 'collector', actor: collectorId, weight }) };
+  const category = check.category || bag.category;
+  const patch = { status: 'collected', collectorWeight: weight, collectedAt: at, collectorId, category,
+    events: withEvent(bag, { step: 'collected', at, role: 'collector', actor: collectorId, weight },
+      ...sortCheckEvents(bag, check, at, 'collector', collectorId)) };
   if (!cloud) { Object.assign(bag, patch); save(); return bag; }
   const { data, error } = await cloud.from('bags')
-    .update({ status: 'collected', collector_weight: weight, collected_at: at, collector_id: collectorId, events: patch.events })
+    .update({ status: 'collected', collector_weight: weight, collected_at: at, collector_id: collectorId, category, events: patch.events })
     .eq('id', bag.id).eq('status', 'logged')
     .select();
   if (error) throw error;
@@ -1033,9 +1211,9 @@ function seed() {
     { c: 'SDC', cat: 'Blue',   kg: 0.4,  log: [10, 10], col: [0.4, 11, 5],   trip: [12, 20], rec: [0.4, 13, 30], done: ['Disinfection + recycling', 'CBWTF-TC-40342', 15, 40] },
     { c: 'SDC', cat: 'Yellow', kg: 0.9,  log: [12, 30] },
     { c: 'NPL', cat: 'Yellow', kg: 2.9,  log: [8, 40],  col: [2.9, 11, 30],  trip: [12, 20], rec: [2.85, 13, 30] },
-    { c: 'NPL', cat: 'Red',    kg: 1.4,  log: [9, 15],  col: [1.45, 11, 30], trip: [12, 20], rec: [1.45, 13, 30] },
+    { c: 'NPL', cat: 'Yellow', kg: 1.4,  log: [9, 15],  col: [1.45, 11, 30], trip: [12, 20], rec: [1.45, 13, 30], was: 'Red' },  // logged Red; the CBWTF found soiled dressings
     { c: 'NPL', cat: 'Blue',   kg: 0.6,  log: [10, 30], col: [0.6, 11, 30],  trip: [12, 20], rec: [0.6, 13, 30] },
-    { c: 'PDC', cat: 'Red',    kg: 1.1,  log: [9, 10],  col: [1.1, 11, 50],  trip: [12, 20], rec: [1.1, 13, 30] },
+    { c: 'PDC', cat: 'Red',    kg: 1.1,  log: [9, 10],  col: [1.1, 11, 50],  trip: [12, 20], rec: [1.1, 13, 30], dirty: true },  // wrong items mixed in
     { c: 'PDC', cat: 'Yellow', kg: 1.9,  log: [10, 5],  col: [1.9, 11, 50],  trip: [12, 20], rec: [1.88, 13, 30] },
     { c: 'PDC', cat: 'White',  kg: 0.2,  log: [11, 40], col: [0.2, 11, 50],  trip: [12, 20], rec: [0.2, 13, 30] },
     { c: 'GWC', cat: 'Yellow', kg: 2.2,  log: [9, 30],  col: [2.2, 12, 5],   trip: [12, 20], rec: [2.2, 13, 30] },
@@ -1049,6 +1227,7 @@ function seed() {
     { c: 'NPL', cat: 'Yellow', kg: 2.4,  log: [9, 0, 2],   col: [2.4, 11, 30, 2],  trip: [12, 20, 2] },                                               // left 2 days ago, never received
     { c: 'SPL', cat: 'Red',    kg: 1.0,  log: [8, 45, 1],  col: [1.0, 10, 10, 1],  trip: [12, 20, 1], rec: [1.0, 13, 30, 1],  done: ['Autoclave + shredding', 'CBWTF-TC-40331', 16, 0, 1] },
     { c: 'SCC', cat: 'White',  kg: 0.4,  log: [9, 40, 1],  col: [0.4, 10, 40, 1],  trip: [12, 20, 1], rec: [0.4, 13, 30, 1],  done: ['Autoclave + shredding', 'CBWTF-TC-40336', 16, 20, 1] },
+    { c: 'HPC', cat: 'White',  kg: 0.3,  log: [9, 50, 1],  col: [0.3, 12, 40, 1],  trip: [13, 0, 1],  rec: [0.3, 14, 10, 1], was: 'Yellow', fixedBy: 'collector' },  // needles in a Yellow bag, caught at pickup
     { c: 'SDC', cat: 'White',  kg: 0.6,  log: [10, 0, 1],  col: [0.6, 11, 5, 1] },                                                                   // collected yesterday, never left
     { c: 'PDC', cat: 'Yellow', kg: 1.5,  log: [9, 20, 1],  col: [1.5, 11, 50, 1],  trip: [12, 20, 1], rec: [1.45, 13, 30, 1], done: ['Incineration', 'CBWTF-TC-40329', 15, 45, 1] },
     { c: 'GWC', cat: 'Yellow', kg: 1.8,  log: [9, 35, 1],  col: [1.8, 12, 5, 1],   trip: [12, 20, 1], rec: [1.8, 13, 30, 1],  done: ['Incineration', 'CBWTF-TC-40335', 16, 30, 1] },
@@ -1064,11 +1243,16 @@ function seed() {
       receivedAt: null, receivedWeight: null, facility: null, treatedAt: null, treatmentMethod: null, certificateRef: null,
       events: [{ step: 'logged', at: at(s.log), role: 'clinic', actor: s.c, weight: s.kg }],
     };
+    if (s.was) b.category = s.was; // as logged; corrected below
     used.add(b.id);
     if (s.col) {
       const [w, ...time] = s.col;
       Object.assign(b, { status: 'collected', collectorWeight: w, collectedAt: at(time), collectorId: crew.collector });
       b.events.push({ step: 'collected', at: b.collectedAt, role: 'collector', actor: crew.collector, weight: w });
+      if (s.was && s.fixedBy === 'collector') {
+        b.events.push(...sortCheckEvents(b, { category: s.cat }, b.collectedAt, 'collector', crew.collector));
+        b.category = s.cat;
+      }
     }
     if (s.trip) {
       Object.assign(b, { transitAt: at(s.trip), vehicleId: crew.vehicle });
@@ -1078,6 +1262,9 @@ function seed() {
       const [w, ...time] = s.rec;
       Object.assign(b, { receivedAt: at(time), receivedWeight: w, facility: CBWTF });
       b.events.push({ step: 'received', at: b.receivedAt, role: 'facility', actor: CBWTF, weight: w });
+      const check = { category: s.was && s.fixedBy !== 'collector' ? s.cat : null, contaminated: !!s.dirty };
+      b.events.push(...sortCheckEvents(b, check, b.receivedAt, 'facility', CBWTF));
+      if (check.category) b.category = s.cat;
     }
     if (s.done) {
       const [method, cert, ...time] = s.done;
@@ -1086,7 +1273,11 @@ function seed() {
     }
     bags.push(b);
   }
-  return { bags };
+  // Supplies already requested with points
+  const redemptions = [
+    { id: 'seed-1', clinic: 'SPL', item: 'gauze', points: 200, requestedAt: todayAt(17, 10, -1), status: 'Requested' },
+  ];
+  return { bags, redemptions };
 }
 
 function newBagId(clinicCode, taken) {
@@ -1097,7 +1288,7 @@ function newBagId(clinicCode, taken) {
   return id;
 }
 
-let db = cloud ? { bags: [] } : (load() || seed());
+let db = cloud ? { bags: [], redemptions: [] } : (load() || seed());
 let dataReady = !cloud;
 save();
 
@@ -1185,9 +1376,72 @@ function flagText(kind, f, short = false) {
   return t('flag.missed', { time: fmtTime(f.time) });
 }
 
+// ---------- reward points (worked out from the bag events, never stored) ----------
+// A bag earns points once its chain is verified: logged → collected → received at the CBWTF, with the weight
+// at each handover within WEIGHT_TOLERANCE of the one before. Points = kg as weighed at the CBWTF × the rate
+// for its (final) colour, counted in the month the CBWTF received it. Mis-sort events carry their own points.
+const fmtPts = (n) => Math.round(n).toLocaleString('en-IN');
+const signedPts = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmtPts(Math.abs(n))}`;
+const rupees = (pts) => `₹${Math.round(pts / POINTS_PER_RUPEE).toLocaleString('en-IN')}`;
+const isThisMonth = (iso, now = new Date()) => {
+  const d = new Date(iso);
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+};
+const happened = (iso) => Date.parse(iso) <= Date.now(); // sample data can hold later clock times
+
+function bagEarning(b) {
+  const received = stepEvent(b, 'received');
+  const collected = stepEvent(b, 'collected');
+  if (!stepEvent(b, 'logged') || !collected || !received || !happened(received.at)) return null;
+  const f = bagFlags(b);
+  if (f.weight || f.arrival) return null; // weights don't match: unverified, earns nothing
+  const kgs = received.weight ?? collected.weight;
+  return { at: received.at, category: b.category, kg: kgs, rate: CLINIC_POINTS[b.category], points: Math.round(kgs * CLINIC_POINTS[b.category]) };
+}
+
+// Everything the Rewards card needs for one clinic
+function clinicPoints(code) {
+  const month = { earned: 0, byCat: {}, penalties: [] };
+  let allTime = 0;
+  for (const b of db.bags) {
+    if (b.clinic !== code) continue;
+    const e = bagEarning(b);
+    if (e) {
+      allTime += e.points;
+      if (isThisMonth(e.at)) {
+        month.earned += e.points;
+        const c = month.byCat[e.category] || (month.byCat[e.category] = { kg: 0, points: 0, bags: 0 });
+        c.kg += e.kg; c.points += e.points; c.bags++;
+      }
+    }
+    for (const p of penaltyEvents(b)) {
+      if (!happened(p.at)) continue;
+      allTime += p.points;
+      if (isThisMonth(p.at)) month.penalties.push({ b, e: p });
+    }
+  }
+  const spent = (db.redemptions || []).filter((r) => r.clinic === code && r.status !== 'Cancelled').reduce((sum, r) => sum + r.points, 0);
+  const deducted = month.penalties.reduce((sum, x) => sum + x.e.points, 0);
+  return { ...month, deducted, net: month.earned + deducted, spent, balance: allTime - spent };
+}
+
+// All clinics by this month's points (earned minus deductions), highest first; equal points share a rank
+function leaderboard() {
+  const rows = CLINICS.map((c) => ({ code: c.code, name: c.name, points: clinicPoints(c.code).net }))
+    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+  rows.forEach((r) => { r.rank = 1 + rows.filter((x) => x.points > r.points).length; });
+  return rows;
+}
+
+function penaltyText(e) {
+  return e.step === 'reclassified'
+    ? t('penalty.reclassified', { from: catName(e.from), to: catName(e.to), pts: fmtPts(Math.abs(e.points)) })
+    : t('penalty.contamination', { pts: fmtPts(Math.abs(e.points)) });
+}
+
 // ---------- role switching ----------
 // The five roles; their titles, subtitles and avatar initials come from translations (role.* / view.*)
-const VIEWS = { clinic: {}, collector: {}, monitor: {}, facility: {}, track: {} };
+const VIEWS = { clinic: {}, collector: {}, monitor: {}, facility: {}, track: {}, leaderboard: {} };
 
 function updateHeader() {
   $('pageTitle').textContent = t('role.' + role);
@@ -1219,7 +1473,9 @@ document.querySelectorAll('.nav-item').forEach((b) => b.addEventListener('click'
 
 // ---------- clinic view ----------
 $('clinicSel').innerHTML = CLINICS.map((c) => `<option value="${c.code}">${esc(c.name)}</option>`).join('');
+try { const saved = localStorage.getItem(CLINIC_KEY); if (CLINICS.some((c) => c.code === saved)) $('clinicSel').value = saved; } catch (e) {}
 $('clinicSel').addEventListener('change', () => {
+  try { localStorage.setItem(CLINIC_KEY, $('clinicSel').value); } catch (e) {}
   clearQr();
   $('whoSub').textContent = clinicName($('clinicSel').value);
   render();
@@ -1753,6 +2009,7 @@ $('clinicTbody').addEventListener('click', (e) => {
 
 function renderClinic() {
   const code = $('clinicSel').value;
+  renderRewards(code);
   $('clinicName').textContent = clinicName(code);
   const bags = db.bags.filter((b) => b.clinic === code && isToday(b.loggedAt))
     .sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
@@ -1766,6 +2023,121 @@ function renderClinic() {
       <td>${statusCell(b.status)}</td>
     </tr>`).join('') : `<tr><td colspan="5" class="empty">${esc(t('clinic.noBags'))}</td></tr>`;
 }
+
+// ---------- rewards (Clinic view) ----------
+function renderRewards(code) {
+  const p = clinicPoints(code);
+  const board = leaderboard();
+  const me = board.find((r) => r.code === code);
+  const cats = CAT_ORDER.filter((c) => p.byCat[c]);
+  const rates = CAT_ORDER.map((c) => `${catName(c)} ${CLINIC_POINTS[c]}`).join(' · ');
+  $('rewardsBody').innerHTML = `
+    <div class="rw-top">
+      <div class="rw-box rw-balance"><span class="l">${esc(t('rewards.balance'))}</span><b id="rwBalance">${fmtPts(p.balance)}</b>
+        <small>${esc(t('rewards.worth', { rs: rupees(Math.max(p.balance, 0)) }))}</small></div>
+      <div class="rw-box rw-rank"><span class="l">${esc(t('rewards.month'))}</span>
+        <b>${esc(t('rewards.rank', { rank: me.rank, total: board.length }))}</b>
+        <a href="#" data-goto="leaderboard">${esc(t('rewards.viewBoard'))} →</a></div>
+    </div>
+    <div class="rw-section">
+      <div class="rw-h"><span>${esc(t('rewards.earned'))}</span><b>${signedPts(p.earned)}</b></div>
+      ${cats.length ? cats.map((c) => `
+        <div class="rw-row"><span class="dot ${c}"></span>
+          <div class="body">${esc(catName(c))}<small>${esc(tn('unit.bags', p.byCat[c].bags))} · ${esc(t('rewards.rate', { kg: kg(p.byCat[c].kg), rate: CLINIC_POINTS[c] }))}</small></div>
+          <span class="pts">${signedPts(p.byCat[c].points)}</span></div>`).join('')
+        : `<div class="rw-empty">${esc(t('rewards.noneEarned'))}</div>`}
+    </div>
+    <div class="rw-section">
+      <div class="rw-h ded"><span>${esc(t('rewards.deductions'))}</span><b>${signedPts(p.deducted)}</b></div>
+      ${p.penalties.length ? p.penalties.sort((a, b) => b.e.at.localeCompare(a.e.at)).map(({ b, e }) => `
+        <div class="rw-row ded"><span class="dot ${esc(loggedCategory(b))}"></span>
+          <div class="body"><b>${esc(penaltyText(e))}</b><small class="mono">${esc(b.id)} · ${fmtDateTime(e.at)} · ${esc(t(e.role === 'collector' ? 'missort.by.collector' : 'missort.by.facility'))}</small></div>
+          <span class="pts">${signedPts(e.points)}</span></div>`).join('')
+        : `<div class="rw-empty">${esc(t('rewards.noDeductions'))}</div>`}
+    </div>
+    <p class="rw-rule">${esc(t('rewards.rule', { rates, per: POINTS_PER_RUPEE }))}</p>`;
+}
+
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-goto]');
+  if (!a) return;
+  e.preventDefault();
+  setRole(a.dataset.goto);
+});
+
+// ---------- redeem points ----------
+function openRedeem() {
+  clearMsg($('redeemMsg'));
+  $('redeemModal').hidden = false;
+  renderRedeem();
+  $('redeemClose').focus();
+}
+function closeRedeem() { $('redeemModal').hidden = true; }
+function renderRedeem() {
+  const code = $('clinicSel').value;
+  const { balance } = clinicPoints(code);
+  $('redeemBalance').innerHTML = `${esc(clinicName(code))} · ${esc(t('redeem.balance', { pts: '\u0001' })).replace('\u0001', `<b>${fmtPts(balance)}</b>`)}`;
+  $('redeemList').innerHTML = REWARD_CATALOGUE.map((it) => {
+    const short = it.points - balance;
+    return `<div class="redeem-item">
+      <div class="body">${esc(t('reward.item.' + it.key))}<small>${esc(t('redeem.cost', { pts: fmtPts(it.points), rs: rupees(it.points) }))}</small>
+        ${short > 0 ? `<small class="short">${esc(t('redeem.short', { pts: fmtPts(short) }))}</small>` : ''}</div>
+      <button class="btn" type="button" data-redeem="${it.key}"${short > 0 ? ' disabled' : ''}>${esc(t('redeem.button'))}</button>
+    </div>`;
+  }).join('');
+  const mine = (db.redemptions || []).filter((r) => r.clinic === code).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+  $('redeemHistory').innerHTML = mine.length ? mine.map((r) => `
+    <div class="redeem-item"><div class="body">${esc(t('reward.item.' + r.item))}<small>${fmtDateTime(r.requestedAt)} · ${esc(signedPts(-r.points))}</small></div>
+      <span class="pill orange">${esc(t('redeem.status.' + r.status))}</span></div>`).join('')
+    : `<div class="rw-empty">${esc(t('redeem.none'))}</div>`;
+}
+$('redeemBtn').addEventListener('click', openRedeem);
+$('redeemClose').addEventListener('click', closeRedeem);
+$('redeemModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeRedeem(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('redeemModal').hidden) closeRedeem(); });
+$('redeemList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-redeem]');
+  if (!btn || btn.disabled) return;
+  const code = $('clinicSel').value;
+  const it = REWARD_CATALOGUE.find((x) => x.key === btn.dataset.redeem);
+  const name = t('reward.item.' + it.key);
+  const msg = $('redeemMsg');
+  if (clinicPoints(code).balance < it.points) return showMsg(msg, 'err', t('redeem.errShort', { item: name }));
+  btn.disabled = true;
+  try { await addRedemption(code, it.key, it.points); }
+  catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', t('redeem.err')); }
+  render();
+  showMsg(msg, 'ok', t('redeem.ok', { item: name, pts: fmtPts(it.points), bal: fmtPts(clinicPoints(code).balance) }));
+});
+
+// ---------- leaderboard ----------
+// Other clinics show only rank, name and points; bag detail stays on each clinic's own Rewards card
+function renderLeaderboard() {
+  const mine = $('clinicSel').value;
+  const month = new Date().toLocaleDateString([], { month: 'long', year: 'numeric' });
+  $('boardSub').textContent = t('board.sub', { month });
+  $('boardList').innerHTML = leaderboard().map((r) => `
+    <div class="lb-row${r.rank <= 3 ? ' top' + r.rank : ''}${r.code === mine ? ' me' : ''}">
+      <span class="lb-rank">${r.rank <= 3 ? icon('trophy') : r.rank}</span>
+      <div class="lb-name">${esc(r.name)}<small>${r.rank <= 3 ? esc(t('board.place.' + r.rank)) : '#' + r.rank}${r.code === mine ? ' · ' + esc(t('board.you')) : ''}</small></div>
+      <span class="lb-pts">${fmtPts(r.points)} <small>${esc(t('board.pts'))}</small></span>
+    </div>`).join('');
+}
+
+// ---------- colour check at pickup / receipt ----------
+// '' means the colour is correct; any other value corrects it (and applies PENALTY_POINTS to the clinic)
+const checkOptions = (current) => `<option value="">${esc(t('check.ok'))}</option>` + CAT_ORDER.filter((c) => c !== current)
+  .map((c) => `<option value="${c}">${esc(t('check.shouldBe', { colour: catName(c) }))}</option>`).join('');
+function buildCollectCheck() {
+  const sel = $('collectCheck');
+  const keep = sel.value;
+  sel.innerHTML = checkOptions(null);
+  sel.value = keep;
+}
+const penaltyNote = (bag, before) => {
+  const added = penaltyEvents(bag).length - before;
+  return added > 0 ? ' ' + t('penalty.applied', { pts: fmtPts(-PENALTY_POINTS * added), clinic: clinicName(bag.clinic) }) : '';
+};
 
 // ---------- collector view ----------
 $('collectForm').addEventListener('submit', async (e) => {
@@ -1791,9 +2163,11 @@ async function confirmPickup() {
 
   const collectorId = $('collectorId').value.trim().toUpperCase() || null;
   try { localStorage.setItem(COLLECTOR_KEY, collectorId || ''); } catch (e) {}
+  const check = { category: $('collectCheck').value || null, contaminated: $('collectContam').checked };
+  const before = penaltyEvents(bag).length;
   let done;
   try {
-    done = await collectBag(bag, w.value, collectorId);
+    done = await collectBag(bag, w.value, collectorId, check);
   } catch (err) {
     console.error(err);
     return showMsg(msg, 'err', t('collector.err.confirm'));
@@ -1807,13 +2181,16 @@ async function confirmPickup() {
   }
 
   const diff = weightDiff(bag);
+  const note = penaltyNote(bag, before);
   if (Math.abs(diff) > WEIGHT_TOLERANCE) {
-    showMsg(msg, 'warn', t('collector.warnWeight', { id, pct: (diff * 100).toFixed(0), from: kg(bag.weight), to: kg(bag.collectorWeight) }));
+    showMsg(msg, 'warn', t('collector.warnWeight', { id, pct: (diff * 100).toFixed(0), from: kg(bag.weight), to: kg(bag.collectorWeight) }) + note);
   } else {
-    showMsg(msg, 'ok', t('collector.ok', { id, clinic: clinicName(bag.clinic) }));
+    showMsg(msg, note ? 'warn' : 'ok', t('collector.ok', { id, clinic: clinicName(bag.clinic) }) + note);
   }
   $('collectId').value = '';
   $('collectWeight').value = '';
+  $('collectCheck').value = '';
+  $('collectContam').checked = false;
   $('collectId').focus();
   render();
 }
@@ -1990,6 +2367,7 @@ document.querySelectorAll('input[data-scan]').forEach((input) => input.addEventL
 const ACTIVITY_LOOK = {
   logged: ['green', 'package'], collected: ['blue', 'truck'], in_transit: ['orange', 'route'],
   received: ['blue', 'factory'], treated: ['green', 'check'],
+  reclassified: ['red', 'alert'], contamination: ['red', 'alert'],
 };
 function exceptions() {
   const out = [];
@@ -2076,6 +2454,7 @@ function renderMonitor() {
     const [tile, ic] = ACTIVITY_LOOK[e.step];
     const detail = e.step === 'logged'
       ? `${esc(clinicName(b.clinic))} · ${esc(catName(b.category))} · ${kg(b.weight)}${b.selectionMethod === 'camera-assisted' ? ` · ${esc(t('monitor.act.assisted'))}` : ''}`
+      : PENALTY_STEPS.has(e.step) ? `<span class="mono">${esc(b.id)}</span> · ${esc(clinicName(b.clinic))} · ${esc(signedPts(e.points))}`
       : `<span class="mono">${esc(b.id)}</span>${e.weight != null ? ` · ${kg(e.weight)}` : ''}${e.actor ? ` · ${esc(e.actor)}` : ''}`;
     return `
     <div class="list-row">
@@ -2084,6 +2463,50 @@ function renderMonitor() {
       <div class="right"><small>${fmtTime(e.at)}</small></div>
     </div>`;
   }).join('') : `<div class="empty">${esc(t('monitor.noActivity'))}</div>`;
+
+  renderFunding();
+  renderMissorts();
+}
+
+// Points issued this month for verified bags, and who funds them (reference ₹ value only; no cash is paid)
+function renderFunding() {
+  let issued = 0, deducted = 0, missorted = 0;
+  for (const b of db.bags) {
+    const e = bagEarning(b);
+    if (e && isThisMonth(e.at)) issued += e.points;
+    const pen = penaltyEvents(b).filter((p) => happened(p.at) && isThisMonth(p.at));
+    if (pen.length) { missorted++; deducted += pen.reduce((sum, p) => sum + p.points, 0); }
+  }
+  const govt = issued * GOVT_FUNDED_SHARE;
+  const govtPct = Math.round(GOVT_FUNDED_SHARE * 100);
+  const redeemed = (db.redemptions || []).filter((r) => r.status !== 'Cancelled' && isThisMonth(r.requestedAt)).reduce((sum, r) => sum + r.points, 0);
+  $('fundingSub').textContent = t('funding.sub', { per: POINTS_PER_RUPEE });
+  $('fundingBody').innerHTML = `
+    <div class="fund-grid">
+      <div class="rw-box"><span class="l">${esc(t('funding.issued'))}</span><b>${fmtPts(issued)}</b><small>${esc(t('funding.worth', { rs: rupees(issued) }))}</small></div>
+      <div class="rw-box"><span class="l">${esc(t('funding.govt'))}</span><b>${rupees(govt)}</b><small>${esc(t('funding.share', { pct: govtPct, pts: fmtPts(govt) }))}</small></div>
+      <div class="rw-box"><span class="l">${esc(t('funding.facility'))}</span><b>${rupees(issued - govt)}</b><small>${esc(t('funding.share', { pct: 100 - govtPct, pts: fmtPts(issued - govt) }))}</small></div>
+      <div class="rw-box"><span class="l">${esc(t('funding.deducted'))}</span><b>${signedPts(deducted)}</b><small>${esc(t('funding.redeemed', { pts: fmtPts(redeemed) }))} · ${esc(tn('unit.bags', missorted))} ${esc(t('funding.missorted'))}</small></div>
+    </div>
+    <div class="fund-bar" aria-hidden="true"><i style="width:${govtPct}%;background:var(--blue)"></i><i style="width:${100 - govtPct}%;background:var(--green)"></i></div>
+    <p class="fund-line">${esc(t('funding.summary', { pts: fmtPts(issued), govt: rupees(govt), facility: rupees(issued - govt) }))}</p>`;
+}
+
+// Recent mis-sorts across all clinics, newest first, from the penalty events on each bag
+function renderMissorts() {
+  const rows = [];
+  for (const b of db.bags) for (const e of penaltyEvents(b)) if (happened(e.at)) rows.push({ b, e });
+  rows.sort((x, y) => y.e.at.localeCompare(x.e.at));
+  $('missortTbody').innerHTML = rows.length ? rows.slice(0, 20).map(({ b, e }) => `
+    <tr>
+      <td>${esc(clinicName(b.clinic))}</td>
+      <td class="mono"><a class="idlink" href="?track=${encodeURIComponent(b.id)}" data-track="${esc(b.id)}" title="${esc(t('common.trackThis'))}">${esc(b.id)}</a></td>
+      <td>${catCell(e.step === 'reclassified' ? e.from : e.category)}</td>
+      <td>${e.step === 'reclassified' ? catCell(e.to) : `<span class="pill red">${esc(t('missort.mixed'))}</span>`}</td>
+      <td class="num">${esc(signedPts(e.points))}</td>
+      <td>${esc(t(e.role === 'collector' ? 'missort.by.collector' : 'missort.by.facility'))}</td>
+      <td>${fmtDateTime(e.at)}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">${esc(t('missort.none'))}</td></tr>`;
 }
 
 // ---------- track view ----------
@@ -2122,7 +2545,7 @@ function journey(b) {
   const done = (step, extra) => ({ label: t(STEP_KEYS[step]), state: 'done', time: ev[step].at, ...extra });
   const pending = (step, extra) => ({ label: t(STEP_KEYS[step]), state: 'pending', ...extra });
 
-  steps.push(done('logged', { detail: `${clinicName(b.clinic)} · ${catLabel(b.category)} · ${kg(ev.logged.weight ?? b.weight)}` }));
+  steps.push(done('logged', { detail: `${clinicName(b.clinic)} · ${catLabel(loggedCategory(b))} · ${kg(ev.logged.weight ?? b.weight)}` }));
 
   if (ev.collected) {
     steps.push(done('collected', {
@@ -2162,6 +2585,12 @@ function journey(b) {
   steps.push(ev.treated ? done('treated', {
     detail: `${ev.treated.method ? treatLabel(ev.treated.method) : t('detail.methodNone')}${ev.treated.certificate ? ' · ' + t('detail.certificate', { ref: ev.treated.certificate }) : ''}`,
   }) : pending('treated'));
+
+  // Mis-sorts show on the checkpoint where they were found, so the audit trail explains every deduction
+  for (const p of penaltyEvents(b)) {
+    const st = steps[p.role === 'collector' ? 1 : 3];
+    if (st) (st.notes = st.notes || []).push(penaltyText(p));
+  }
 
   const status = (f.weight || f.arrival) ? ['red', t('track.status.exception')]
     : (f.overdue || f.missed || f.stuck) ? ['orange', t('track.status.delayed')] : ['green', t('track.status.onTrack')];
@@ -2215,6 +2644,7 @@ function renderTrack() {
           ${st.time ? `<div class="tl-time">${fmtDateTime(st.time)}</div>` : ''}
           ${st.detail && st.state !== 'pending' ? `<div class="tl-detail">${esc(st.detail)}</div>` : ''}
           ${st.state === 'flag' ? `<div class="tl-reason">${esc(st.reason)}</div>` : ''}
+          ${(st.notes || []).map((n) => `<div class="tl-note">${esc(n)}</div>`).join('')}
         </div>
       </li>`;
       }).join('')}
@@ -2298,6 +2728,10 @@ function renderFacPanel() {
           <label class="field"><span>${esc(t('facility.arrivalWeight'))}</span><input id="facWeight" type="number" step="0.01" min="0" inputmode="decimal" placeholder="${esc(fmtKg(b.collectorWeight))}"></label>
           <label class="field"><span>${esc(t('facility.name'))}</span><input id="facName" type="text" value="${esc(rememberedFacility())}" autocomplete="off"></label>
         </div>
+        <div class="form-row sort-check">
+          <label class="field"><span>${esc(t('check.colour'))}</span><select id="facCheck">${checkOptions(b.category)}</select></label>
+          <label class="check-row"><input type="checkbox" id="facContam"><span>${esc(t('check.contam'))}</span></label>
+        </div>
         <div class="actions"><button class="btn" type="submit"><span data-icon="check"></span>${esc(t('facility.confirmReceipt'))}</button></div>
       </form>`;
   } else if (stage === 'awaiting treatment') {
@@ -2340,8 +2774,10 @@ $('facPanel').addEventListener('submit', async (e) => {
     if (!facility) return showMsg(msg, 'err', t('facility.err.name'));
     try { localStorage.setItem(FACILITY_KEY, facility); } catch (err) {}
     btn.disabled = true;
+    const check = { category: $('facCheck').value || null, contaminated: $('facContam').checked };
+    const before = penaltyEvents(b).length;
     let done;
-    try { done = await receiveBag(b, w.value, facility); }
+    try { done = await receiveBag(b, w.value, facility, check); }
     catch (err) { console.error(err); btn.disabled = false; return showMsg(msg, 'err', t('facility.err.receipt')); }
     if (!done) { await refresh(); render(); return showMsg(msg, 'err', t('facility.err.receivedOther', { id: b.id })); }
     const f = bagFlags(b);
@@ -2351,6 +2787,8 @@ $('facPanel').addEventListener('submit', async (e) => {
         { id: b.id, pct: Math.abs(d * 100).toFixed(0), from: kg(b.collectorWeight), to: kg(b.receivedWeight) }));
     }
     else showMsg(msg, 'ok', t('facility.received', { id: b.id, facility }));
+    const note = penaltyNote(b, before);
+    if (note) showMsg(msg, 'warn', msg.textContent + note);
   } else if (form.id === 'treatForm') {
     const method = $('facMethod').value;
     const cert = $('facCert').value.trim().toUpperCase() || null;
@@ -2466,7 +2904,9 @@ function render() {
   else if (role === 'collector') renderCollector();
   else if (role === 'track') renderTrack();
   else if (role === 'facility') renderFacility();
+  else if (role === 'leaderboard') renderLeaderboard();
   else renderMonitor();
+  if (!$('redeemModal').hidden) renderRedeem();
   labelCells();
 }
 
@@ -2489,6 +2929,7 @@ function setLang(code) {
   document.querySelectorAll('.lang-sel').forEach((sel) => { sel.value = code; });
   applyI18n();
   buildCatPick();
+  buildCollectCheck();
   ['clinicMsg', 'collectMsg', 'dispatchMsg', 'trackMsg', 'facMsg', 'labelMsg'].forEach((id) => clearMsg($(id)));
   setScanAssist(scanAssist);
   if (assistRedo && !$('assistPanel').hidden) assistRedo();
@@ -2498,6 +2939,7 @@ function setLang(code) {
 
 buildLangMenus();
 applyI18n();
+buildCollectCheck();
 paintIcons();
 $('dateChip').textContent = new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 clearQr();

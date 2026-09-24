@@ -66,3 +66,31 @@ update public.bags b set events = (
   ) x
 )
 where b.events = '[]'::jsonb;
+
+-- Reward points: clinics spend points on supplies. Points themselves are never stored; the app works them
+-- out from each bag's events. This table only records what was redeemed. Safe to re-run.
+create table if not exists public.redemptions (
+  id           uuid primary key default gen_random_uuid(),
+  clinic       text not null,                       -- clinic code, e.g. SPL
+  item         text not null,                       -- catalogue key: cotton, gauze, syringes, gloves, medkit
+  points       integer not null check (points > 0),
+  requested_at timestamptz not null default now(),
+  status       text not null default 'Requested'
+);
+
+-- DEMO ACCESS, same as bags: anyone with the site link can read and add redemptions.
+alter table public.redemptions enable row level security;
+drop policy if exists "demo read"   on public.redemptions;
+drop policy if exists "demo insert" on public.redemptions;
+drop policy if exists "demo update" on public.redemptions;
+drop policy if exists "demo delete" on public.redemptions;
+create policy "demo read"   on public.redemptions for select to anon using (true);
+create policy "demo insert" on public.redemptions for insert to anon with check (true);
+create policy "demo update" on public.redemptions for update to anon using (true) with check (true);
+create policy "demo delete" on public.redemptions for delete to anon using (true);
+
+do $$
+begin
+  alter publication supabase_realtime add table public.redemptions;
+exception when duplicate_object then null;
+end $$;
