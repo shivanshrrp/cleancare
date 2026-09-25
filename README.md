@@ -20,7 +20,7 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 | File | What it is |
 | --- | --- |
 | `index.html` | The whole app |
-| `translations.js` | Every piece of interface text, in English, Hindi and Marathi. See *Languages* below |
+| `translations.js`, `translations/` | All interface text: English, Hindi and Marathi inline, the other 20 languages as separate files. See *Languages* below |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database tables (bags, redemptions). Run once; later additions are safe to re-run |
 | `supabase/functions/classify-waste/` | Server function behind "Scan an item": sends the photo to Google Gemini (free tier), or Claude if only `ANTHROPIC_API_KEY` is set. Needs the `GEMINI_API_KEY` secret in Supabase → Edge Functions → Secrets |
@@ -94,14 +94,39 @@ points), created by `supabase-setup.sql`.
 
 ## Languages
 
-The app is available in English, हिंदी (Hindi) and मराठी (Marathi), chosen from the menu in the header and
-remembered on each device. All interface text lives in `translations.js`, one block per language with the same
-keys; the page uses `t("key")` to look text up and falls back to English for anything missing.
+The app covers English plus all 22 languages of the Eighth Schedule. Users pick one from the searchable menu in the
+header, which shows each language in its own script, grouped by script family. The choice is remembered on each
+device and passed to the Android app for its offline screen. Urdu, Kashmiri and Sindhi switch the whole layout to
+right-to-left. Fonts come from Google's Noto families, and a browser only downloads the scripts it actually shows.
 
-To add a language, copy the `en` block in `translations.js`, give it the language code (e.g. `ta`), translate the
-values and keep the keys and `{placeholders}` as they are. Nothing else needs to change: the language menu lists
-every block automatically. Bag IDs, clinic names, times and typed values are never translated, and printed PDF
-labels stay in English because the PDF fonts can't draw Devanagari.
+| Quality | Languages |
+|---|---|
+| **Complete, 438 of 438 strings** | English, हिन्दी Hindi, मराठी Marathi, বাংলা Bengali, தமிழ் Tamil, తెలుగు Telugu, ગુજરાતી Gujarati, ಕನ್ನಡ Kannada, മലയാളം Malayalam, ਪੰਜਾਬੀ Punjabi, اردو Urdu |
+| **Core screens, about 220 strings. Best effort, needs native review** | नेपाली Nepali, संस्कृतम् Sanskrit, मैथिली Maithili, डोगरी Dogri, कोंकणी Konkani, অসমীয়া Assamese, ଓଡ଼ିଆ Odia, سنڌي Sindhi |
+| **Partial, 40 to 140 strings. Best effort, needs native review** | बर' Bodo, کٲشُر Kashmiri, ꯃꯩꯇꯩꯂꯣꯟ Manipuri (Meitei Mayek), ᱥᱟᱱᱛᱟᱲᱤ Santali (Ol Chiki) |
+
+For partial languages, any string not yet translated shows in English. Their menu entries are tagged "Partly
+translated", and each file starts with a `REVIEW NEEDED` comment. Please have a native speaker check them before
+using them with real clinics.
+
+**Where the text lives:**
+- `translations.js` holds English, Hindi and Marathi, plus the language list (`CLEANCARE_LANGUAGES`: code, native
+  name, script group, direction, review flag).
+- Each other language is a file in `translations/<code>.js` with the same flat keys. It is loaded only when someone
+  picks that language.
+- The page looks text up with `t("key")`.
+
+**To check or add translations:**
+- Run `deno run --allow-read tools/check-translations.js`. It reports every language's coverage, missing or extra
+  keys, and `{placeholder}` mismatches.
+- To add a language, copy the `en` block into `translations/<code>.js`, translate the values, keep the keys and
+  `{placeholders}` as they are, and add one entry to `CLEANCARE_LANGUAGES`.
+
+**Never translated:**
+- Bag IDs, clinic names and typed values.
+- Printed PDF labels, which stay in English because the PDF fonts can't draw Indian scripts.
+
+Dates use the chosen language's month and weekday names, with Latin digits.
 
 ## Notes
 

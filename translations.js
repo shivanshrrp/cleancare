@@ -1,15 +1,45 @@
 /*
- * CleanCare interface text, one block per language. This file is the single source of truth.
+ * CleanCare interface text, one block per language, all with the same keys. This file holds the language
+ * list and the English, Hindi and Marathi blocks; the other languages live in translations/<code>.js and
+ * are loaded only when someone picks them, so the app stays small on slow phones.
  *
- * To add a language: copy the "en" block, give it the language's code (e.g. "ta" for Tamil),
- * translate the values, and keep every key name the same as in "en". Set "lang.name" to the
- * language's own name in its own script; the language menu picks it up automatically.
+ * To add a language: add it to CLEANCARE_LANGUAGES below, copy the "en" block into translations/<code>.js
+ * as `CLEANCARE_I18N["<code>"] = { ... }`, and translate the values, keeping every key name the same.
  * Any key missing from a language falls back to English.
  *
- * {placeholders} are filled in by the app: keep them exactly as written, in whatever position
- * reads naturally in the language. Bag IDs, clinic names, times and typed values are never
- * translated; they are passed in as placeholders.
+ * {placeholders} are filled in by the app: keep them exactly as written, in whatever position reads
+ * naturally in the language. Bag IDs, clinic names, times and typed values are never translated.
  */
+
+// Every language in the menu, in menu order: English, then by script family.
+// name: the language's own name in its own script · en: its English name (also searchable)
+// dir: "rtl" for Perso-Arabic scripts · review: best-effort translation, needs a native speaker's check
+window.CLEANCARE_LANGUAGES = [
+  { code: "en",  name: "English",    en: "English",   group: 0 },
+  { code: "hi",  name: "हिंदी",       en: "Hindi",     group: 1 },
+  { code: "mr",  name: "मराठी",       en: "Marathi",   group: 1 },
+  { code: "ne",  name: "नेपाली",      en: "Nepali",    group: 1, review: true },
+  { code: "sa",  name: "संस्कृतम्",     en: "Sanskrit",  group: 1, review: true },
+  { code: "mai", name: "मैथिली",      en: "Maithili",  group: 1, review: true },
+  { code: "doi", name: "डोगरी",       en: "Dogri",     group: 1, review: true },
+  { code: "brx", name: "बड़ो",         en: "Bodo",      group: 1, review: true },
+  { code: "kok", name: "कोंकणी",      en: "Konkani",   group: 1, review: true },
+  { code: "bn",  name: "বাংলা",       en: "Bengali",   group: 2 },
+  { code: "as",  name: "অসমীয়া",      en: "Assamese",  group: 2, review: true },
+  { code: "ta",  name: "தமிழ்",       en: "Tamil",     group: 3 },
+  { code: "te",  name: "తెలుగు",      en: "Telugu",    group: 3 },
+  { code: "kn",  name: "ಕನ್ನಡ",       en: "Kannada",   group: 3 },
+  { code: "ml",  name: "മലയാളം",     en: "Malayalam", group: 3 },
+  { code: "gu",  name: "ગુજરાતી",     en: "Gujarati",  group: 4 },
+  { code: "pa",  name: "ਪੰਜਾਬੀ",      en: "Punjabi",   group: 4 },
+  { code: "or",  name: "ଓଡ଼ିଆ",       en: "Odia",      group: 4, review: true },
+  { code: "ur",  name: "اردو",        en: "Urdu",      group: 5, dir: "rtl" },
+  { code: "ks",  name: "کٲشُر",       en: "Kashmiri",  group: 5, dir: "rtl", review: true },
+  { code: "sd",  name: "سنڌي",        en: "Sindhi",    group: 5, dir: "rtl", review: true },
+  { code: "mni", name: "ꯃꯤꯇꯩꯂꯣꯟ",    en: "Manipuri",  group: 6, review: true },
+  { code: "sat", name: "ᱥᱟᱱᱛᱟᱲᱤ",     en: "Santali",   group: 6, review: true },
+];
+
 window.CLEANCARE_I18N = {
   en: {
     "lang.name": "English",
@@ -454,7 +484,19 @@ window.CLEANCARE_I18N = {
     "inactive.none": "Every clinic has logged waste in the last {days} days.",
     "nudge.never": "You haven't logged any waste yet. Log your first bag to start earning points.",
     "nudge.days.one": "You haven't logged any waste in {n} day. Log a bag to keep earning points.",
-    "nudge.days.other": "You haven't logged any waste in {n} days. Log a bag to keep earning points."
+    "nudge.days.other": "You haven't logged any waste in {n} days. Log a bag to keep earning points.",
+    "lang.search": "Search languages",
+    "lang.partial": "Partly translated",
+    "supply.cotton": "Cotton roll",
+    "supply.gauze": "Gauze pads",
+    "supply.antiseptic": "Antiseptic solution (500 ml)",
+    "supply.sanitiser": "Hand sanitiser (500 ml)",
+    "supply.masks": "Surgical masks (box of 50)",
+    "supply.aprons": "Disposable aprons (pack of 10)",
+    "supply.syringes": "Syringes (pack of 10)",
+    "supply.gloves": "Gloves (box)",
+    "supply.medkit": "Basic medicine kit",
+    "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
   hi: {
@@ -900,7 +942,19 @@ window.CLEANCARE_I18N = {
     "inactive.none": "हर क्लीनिक ने पिछले {days} दिनों में कचरा दर्ज किया है।",
     "nudge.never": "आपने अभी तक कोई कचरा दर्ज नहीं किया है। पॉइंट कमाना शुरू करने के लिए अपना पहला बैग दर्ज करें।",
     "nudge.days.one": "आपने {n} दिन से कोई कचरा दर्ज नहीं किया है। पॉइंट कमाते रहने के लिए बैग दर्ज करें।",
-    "nudge.days.other": "आपने {n} दिनों से कोई कचरा दर्ज नहीं किया है। पॉइंट कमाते रहने के लिए बैग दर्ज करें।"
+    "nudge.days.other": "आपने {n} दिनों से कोई कचरा दर्ज नहीं किया है। पॉइंट कमाते रहने के लिए बैग दर्ज करें।",
+    "lang.search": "भाषा खोजें",
+    "lang.partial": "आंशिक अनुवाद",
+    "supply.cotton": "रुई का रोल",
+    "supply.gauze": "गॉज़ पैड",
+    "supply.antiseptic": "एंटीसेप्टिक घोल (500 ml)",
+    "supply.sanitiser": "हैंड सैनिटाइज़र (500 ml)",
+    "supply.masks": "सर्जिकल मास्क (50 का डिब्बा)",
+    "supply.aprons": "डिस्पोज़ेबल एप्रन (10 का पैक)",
+    "supply.syringes": "सिरिंज (10 का पैक)",
+    "supply.gloves": "दस्ताने (डिब्बा)",
+    "supply.medkit": "बेसिक दवा किट",
+    "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
   mr: {
@@ -1346,6 +1400,18 @@ window.CLEANCARE_I18N = {
     "inactive.none": "प्रत्येक दवाखान्याने गेल्या {days} दिवसांत कचरा नोंदवला आहे.",
     "nudge.never": "तुम्ही अजून कोणताही कचरा नोंदवलेला नाही. पॉइंट मिळवायला सुरुवात करण्यासाठी तुमची पहिली बॅग नोंदवा.",
     "nudge.days.one": "तुम्ही {n} दिवसापासून कोणताही कचरा नोंदवलेला नाही. पॉइंट मिळवत राहण्यासाठी बॅग नोंदवा.",
-    "nudge.days.other": "तुम्ही {n} दिवसांपासून कोणताही कचरा नोंदवलेला नाही. पॉइंट मिळवत राहण्यासाठी बॅग नोंदवा."
+    "nudge.days.other": "तुम्ही {n} दिवसांपासून कोणताही कचरा नोंदवलेला नाही. पॉइंट मिळवत राहण्यासाठी बॅग नोंदवा.",
+    "lang.search": "भाषा शोधा",
+    "lang.partial": "अंशतः भाषांतर",
+    "supply.cotton": "कापसाचा रोल",
+    "supply.gauze": "गॉझ पॅड",
+    "supply.antiseptic": "जंतुनाशक द्रावण (500 ml)",
+    "supply.sanitiser": "हँड सॅनिटायझर (500 ml)",
+    "supply.masks": "सर्जिकल मास्क (50 चा खोका)",
+    "supply.aprons": "डिस्पोजेबल ॲप्रन (10 चे पॅक)",
+    "supply.syringes": "सिरिंज (10 चे पॅक)",
+    "supply.gloves": "हातमोजे (खोका)",
+    "supply.medkit": "मूलभूत औषध किट",
+    "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };
