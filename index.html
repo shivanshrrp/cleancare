@@ -3075,13 +3075,23 @@ function openLangMenu(btn) {
   $('langSearch').value = '';
   renderLangList();
   pop.hidden = false;
-  const r = btn.getBoundingClientRect();
-  const w = pop.offsetWidth;
-  pop.style.top = `${Math.round(r.bottom + 6)}px`;
-  pop.style.left = `${Math.round(Math.min(Math.max(12, r.right - w), window.innerWidth - w - 12))}px`;
+  placeLangMenu();
   btn.setAttribute('aria-expanded', 'true');
   pop.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
-  $('langSearch').focus({ preventScroll: true });
+  // On phones, focusing the search box would pop up the keyboard over the list, so people tap it when they want it
+  if (!matchMedia('(pointer: coarse)').matches) $('langSearch').focus({ preventScroll: true });
+}
+// Puts the menu under the button that opened it and keeps it inside the visible screen
+function placeLangMenu() {
+  const pop = $('langPop');
+  if (pop.hidden || !langOpener) return;
+  const r = langOpener.getBoundingClientRect();
+  const w = pop.offsetWidth;
+  const top = Math.round(r.bottom + 6);
+  const viewH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  pop.style.top = `${top}px`;
+  pop.style.left = `${Math.round(Math.min(Math.max(12, r.right - w), window.innerWidth - w - 12))}px`;
+  pop.style.maxHeight = `${Math.max(160, Math.min(520, viewH - top - 12))}px`;
 }
 function closeLangMenu() {
   $('langPop').hidden = true;
@@ -3114,7 +3124,9 @@ document.addEventListener('click', (e) => {
   if ($('langPop').hidden || e.target.closest('#langPop') || e.target.closest('.lang-btn')) return;
   closeLangMenu();
 });
-window.addEventListener('resize', () => { if (!$('langPop').hidden) closeLangMenu(); });
+// A phone keyboard opening (from the search box) resizes the page; move the menu rather than closing it
+window.addEventListener('resize', placeLangMenu);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', placeLangMenu);
 
 // Languages other than en, hi and mr live in translations/<code>.js and load the first time they're chosen
 function loadLang(code) {
