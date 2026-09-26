@@ -1,6 +1,9 @@
 // CleanCare interface text: Malayalam (മലയാളം). Same keys as the "en" block in translations.js; loaded when chosen.
 window.CLEANCARE_I18N = window.CLEANCARE_I18N || {};
 window.CLEANCARE_I18N["ml"] = {
+  // Shorter labels for the phone tab bar only (optional keys; other languages use the role names)
+  "tab.collector": "കളക്ടർ",
+  "tab.facility": "സംസ്കരണം",
   "lang.name": "മലയാളം",
   "lang.label": "ഭാഷ",
   "app.title": "CleanCare മാലിന്യ ട്രാക്കർ",

@@ -13,11 +13,11 @@ for (const l of L) {
   const b = I[l.code];
   if (!b) { console.log(`${l.code.padEnd(4)} MISSING FILE`); bad++; continue; }
   const missing = keys.filter((k) => !(k in b));
-  const extra = Object.keys(b).filter((k) => !(k in en));
+  const extra = Object.keys(b).filter((k) => !(k in en) && !k.startsWith("tab.")); // tab.* = optional short tab-bar labels
   const phBad = keys.filter((k) => k in b && ph(b[k]) !== ph(en[k]));
   const empty = keys.filter((k) => k in b && !String(b[k]).trim());
   const full = missing.length === 0;
-  console.log(`${l.code.padEnd(4)} ${String(Object.keys(b).length).padStart(3)}/${keys.length} ${full ? "complete" : "partial "}${l.review ? " (review)" : ""}` +
+  console.log(`${l.code.padEnd(4)} ${String(keys.length - missing.length).padStart(3)}/${keys.length} ${full ? "complete" : "partial "}${l.review ? " (review)" : ""}` +
     (extra.length ? `  EXTRA: ${extra.join(" ")}` : "") + (phBad.length ? `  PLACEHOLDERS: ${phBad.join(" ")}` : "") + (empty.length ? `  EMPTY: ${empty.join(" ")}` : ""));
   if (extra.length || phBad.length || empty.length || (!l.review && !full)) bad++;
 }
