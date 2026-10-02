@@ -92,7 +92,7 @@ window.CLEANCARE_I18N = {
 
     "reset.button": "Reset Demo",
     "reset.title": "Reset the demo?",
-    "reset.textCloud": "This deletes every bag for everyone using this site and reloads the sample bags.",
+    "reset.textCloud": "This reloads the sample bags for everyone using this site. Bags logged in the app are kept.",
     "reset.textLocal": "This clears every bag logged on this device and reloads the sample bags.",
     "reset.cancel": "Cancel",
     "reset.confirm": "Reset demo",
@@ -550,7 +550,7 @@ window.CLEANCARE_I18N = {
 
     "reset.button": "डेमो रीसेट करें",
     "reset.title": "डेमो रीसेट करें?",
-    "reset.textCloud": "इससे इस साइट के सभी उपयोगकर्ताओं के सारे बैग मिट जाएँगे और नमूना बैग फिर से लोड होंगे।",
+    "reset.textCloud": "इससे इस साइट के सभी उपयोगकर्ताओं के लिए नमूना बैग फिर से लोड होंगे। ऐप में दर्ज बैग बने रहेंगे।",
     "reset.textLocal": "इससे इस डिवाइस पर दर्ज सारे बैग मिट जाएँगे और नमूना बैग फिर से लोड होंगे।",
     "reset.cancel": "रद्द करें",
     "reset.confirm": "रीसेट करें",
@@ -1008,7 +1008,7 @@ window.CLEANCARE_I18N = {
 
     "reset.button": "डेमो रीसेट करा",
     "reset.title": "डेमो रीसेट करायचा?",
-    "reset.textCloud": "यामुळे ही साइट वापरणाऱ्या सर्वांच्या सर्व बॅग पुसल्या जातील आणि नमुना बॅग पुन्हा लोड होतील.",
+    "reset.textCloud": "यामुळे ही साइट वापरणाऱ्या सर्वांसाठी नमुना बॅग पुन्हा लोड होतील. ॲपमध्ये नोंदवलेल्या बॅग तशाच राहतील.",
     "reset.textLocal": "यामुळे या डिव्हाइसवर नोंदवलेल्या सर्व बॅग पुसल्या जातील आणि नमुना बॅग पुन्हा लोड होतील.",
     "reset.cancel": "रद्द करा",
     "reset.confirm": "रीसेट करा",

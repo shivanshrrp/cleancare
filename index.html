@@ -1189,12 +1189,16 @@ async function startCloud() {
 }
 
 async function cloudReset() {
-  const del = await cloud.from('bags').delete().neq('id', '');
+  // Only sample bags are replaced. Bags logged in the app always have a selection method, so they survive a reset.
+  const del = await cloud.from('bags').delete().is('selection_method', null);
   if (del.error) throw del.error;
+  const kept = db.bags.filter((b) => b.selectionMethod);
+  const keptIds = new Set(kept.map((b) => b.id));
   const fresh = seed();
+  fresh.bags = fresh.bags.filter((b) => !keptIds.has(b.id));
   const ins = await cloud.from('bags').insert(fresh.bags.map(toRow));
   if (ins.error) throw ins.error;
-  db.bags = fresh.bags;
+  db.bags = kept.concat(fresh.bags);
   // Redemptions reset with the bags, so balances stay consistent
   const delR = await cloud.from('redemptions').delete().neq('clinic', '');
   if (delR.error) throw delR.error;
