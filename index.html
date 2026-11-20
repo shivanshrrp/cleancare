@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
-<script src="translations.js?v=2.1.3" onerror="window.__i18nFailed = true"></script>
+<script src="translations.js?v=2.1.4" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -25,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js?v=2.1.3" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.1.4" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -1106,7 +1106,7 @@
   </div>
 </div>
 
-<script src="rules.js?v=2.1.3" onerror="window.__rulesFailed = true"></script>
+<script src="rules.js?v=2.1.4" onerror="window.__rulesFailed = true"></script>
 <script>
 // ---------- sign-in ----------
 // ponytail: mock accounts checked in the browser. This decides which screens each role sees; it is not security,
@@ -1187,7 +1187,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.1.3';
+const APP_VERSION = '2.1.4';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
