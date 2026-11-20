@@ -128,6 +128,24 @@ using them with real clinics.
 
 Dates use the chosen language's month and weekday names, with Latin digits.
 
+## Sign-in
+
+Everyone signs in with an email or mobile number and a password. Each role sees only its own screens:
+
+| Role | Screens | Test account |
+|---|---|---|
+| Clinic | Clinic (its own clinic only), Track, Leaderboard | clinic@cleancare.test · 9000000003 |
+| Collector | Collector, Track | collector@cleancare.test · 9000000002 |
+| Municipal / Admin | Every screen, including the treatment facility; only role that can reset shared data | admin@cleancare.test · 9000000001 |
+
+All three test accounts use the password `CleanCare@2026`. Sessions last 7 days on a device; Log out is in the account
+menu (the person icon) and also clears that device's working choices.
+
+**This is a mock sign-in, not security.** Accounts live in `index.html` with their passwords stored only as SHA-256
+hashes, and the session keeps just the user and a random token. It decides which screens each role sees, but the
+database itself is still open to anyone with the site link. Before using CleanCare with real clinic data, replace
+`authService` with Supabase Auth (it has the same `signIn` shape) and add row-level security per role.
+
 ## Notes
 
 - **Security:** the demo database lets anyone who has the site link add, change or delete bags, and
