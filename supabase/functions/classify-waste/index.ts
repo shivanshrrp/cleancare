@@ -18,7 +18,7 @@
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
-const FUNCTION_VERSION = "2.2.1";
+const FUNCTION_VERSION = "2.2.2";
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -38,7 +38,10 @@ WHITE (translucent, puncture-proof): sharps including metal: needles, syringes w
 tip cutters or burners, scalpels, blades, lancets, anything that can cut or pierce skin.
 BLUE (cardboard box): glassware: broken or discarded glass, medicine vials and ampoules (except those contaminated with
 cytotoxic drugs, which go in YELLOW); metallic body implants.
-If the item is not biomedical waste (e.g. paper, food wrapper, household rubbish), the category is None.`;
+If the item is not biomedical waste (e.g. paper, food wrapper, household rubbish), the category is None.
+Commonly confused, follow these exactly: a syringe with its needle still attached is WHITE (the plastic barrel alone,
+needle removed, is RED). Used gloves are RED even when soiled; only the soaked dressing, cotton or gauze itself is
+YELLOW. Glass vials and ampoules are BLUE even when empty.`;
 
 const RESULT_SCHEMA = {
   type: "object",
@@ -65,8 +68,7 @@ const BRIEF_SCHEMA = {
 const classifyPrompt = (lang: string) => `${CPCB_RULES}
 
 You are helping staff at a small Indian clinic put one biomedical waste item in the right bag. Look at the photo,
-identify the single main item, and classify it using only the rules above. Be careful with syringes: with a needle
-attached it is WHITE, the barrel alone is RED. Give your confidence honestly; if the photo is unclear, say so with a low
+identify the single main item, and classify it using only the rules above. Give your confidence honestly; if the photo is unclear, say so with a low
 confidence. Write "item", "reason" and "handling" in ${lang}. Answer as JSON matching the schema.`;
 
 const voicePrompt = (lang: string) => `${CPCB_RULES}
