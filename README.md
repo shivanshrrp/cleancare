@@ -5,10 +5,10 @@ https://shivanshrrp.github.io/cleancare/
 
 | Role | What it does |
 | --- | --- |
-| **Clinic** | **Rewards** card with the clinic's point balance, this month's points by colour, deductions and leaderboard rank; **Redeem points** for supplies. Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label. **Not sure? Scan an item** photographs a loose item and suggests its bag colour (staff confirm before saving) |
+| **Clinic** | **Rewards** card with the clinic's point balance, this month's points by colour, deductions and leaderboard rank; **Redeem points** for supplies. Log a bag (category, weight). It gets an ID and QR code, and **Print label** makes a visiting-card-size (89 × 51 mm) PDF label. **Not sure? Scan an item** photographs a loose item, or staff **describe it by voice** in any language, and Google Gemini suggests its bag colour with its confidence and a safe-handling step, in the user's language (staff confirm before saving) |
 | **Collector** | For the collection crew. Scan or type the bag ID at pickup and record the weight (and flag a wrong colour or contamination), then **Start trip** when the vehicle leaves: every bag on board is marked *In transit* at that time, with the vehicle number |
 | **Facility** | For staff at the treatment plant (CBWTF), not the collector. Confirm each bag on arrival with its weight and a colour check, then record the treatment method and certificate |
-| **Monitor** | Today's counts, activity and exceptions: bags missed at pickup, uncollected after 24 h, not received at the CBWTF within 24 h of pickup (the CPCB rule), or with a weight change over 10% at any handover. Each clinic is listed with its registration code. Also the month's reward points split into government- and CBWTF-funded shares, a table of mis-sorted bags, and a separate list of **inactive clinics** (no bag logged in `INACTIVITY_DAYS`, or never) |
+| **Monitor** | Today's counts, activity and exceptions: bags missed at pickup, uncollected after 24 h, not received at the CBWTF within 24 h of pickup (the CPCB rule), or with a weight change over 10% at any handover. Each clinic is listed with its registration code. Also the month's reward points split into government- and CBWTF-funded shares, a table of mis-sorted bags, and a separate list of **inactive clinics** (no bag logged in `INACTIVITY_DAYS`, or never) · **AI daily brief**: Google Gemini summarises today's figures and suggests follow-ups, in the regulator's language, from the numbers alone (no patient data exists to send) |
 | **Leaderboard** | Clinics ranked by this month's points; only names and totals, top 3 highlighted, your clinic marked |
 | **Track** | A parcel-style timeline for any bag, showing the date and time of every checkpoint; links like `?track=CL-ABC-00231` open it directly |
 
@@ -23,7 +23,7 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 | `translations.js`, `translations/` | All interface text: English, Hindi and Marathi inline, the other 20 languages as separate files. See *Languages* below |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database tables (bags, redemptions). Run once; later additions are safe to re-run |
-| `supabase/functions/classify-waste/` | Server function behind "Scan an item": sends the photo to Google Gemini (free tier), or Claude if only `ANTHROPIC_API_KEY` is set. Needs the `GEMINI_API_KEY` secret in Supabase → Edge Functions → Secrets |
+| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it with Gemini stubbed: `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
 
 ## 1. Set up the shared database (Supabase, free)
 

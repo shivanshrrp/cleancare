@@ -1,30 +1,91 @@
-// CleanCare "Not sure? Scan an item": suggests a CPCB bag colour for a photographed item.
+// CleanCare's Google Gemini features, behind one Supabase Edge Function so the API key stays server-side.
 //
-// Runs on Supabase so the AI provider's API key stays server-side (the web app is public).
-// The browser sends { image: <base64 JPEG/PNG/WebP>, mediaType }, and gets back { text } in the
-// format "ITEM: ... | CATEGORY: ... | REASON: ...". The web app parses it and only ever
-// *suggests* a colour: staff confirm before anything is logged.
+//   task "classify": { image: <base64 JPEG/PNG/WebP>, mediaType, lang }  -> { result }
+//       Photo of one waste item -> CPCB bag colour, confidence, reason and a safe-handling step.
+//   task "voice":    { audio: <base64 WAV>, lang }                           -> { result }
+//       A staff member describes the item aloud in any Indian language -> transcript + the same result.
+//   task "brief":    { data: <today's figures from the Monitor>, lang }      -> { brief }
+//       A short daily brief for the regulator, written only from the figures sent.
 //
-// Provider: Google Gemini (free tier) when the GEMINI_API_KEY secret is set,
-// otherwise Anthropic Claude via ANTHROPIC_API_KEY. Set one in Supabase -> Edge Functions -> Secrets.
+// result = { item, category: Yellow|Red|White|Blue|None, confidence: 0-1, reason, handling, heard? }
+// brief  = { headline, points: [..], actions: [..] }
+// Text fields come back in the language named by `lang` (e.g. "Hindi"). The app only ever *suggests* a colour:
+// staff confirm before anything is logged. A request with no task is treated as "classify" (older app versions).
+//
+// Set GEMINI_API_KEY in Supabase -> Edge Functions -> Secrets (key from Google AI Studio).
 // Note: on Gemini's free tier, Google may use requests to improve its products.
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
-const CLAUDE_MODEL = "claude-sonnet-4-6";
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "http://localhost:8765"];
-const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_BASE64_CHARS = 3_000_000; // ~2.2 MB image; the app sends ~100-300 KB
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_BASE64_CHARS = 3_000_000; // ~2.2 MB; the app sends ~100-300 KB photos and ~250 KB voice clips
+const MAX_BRIEF_CHARS = 20_000;
 const RATE_LIMIT = 20; // requests per minute per client IP (per function instance)
+const CATEGORIES = ["Yellow", "Red", "White", "Blue", "None"];
 
-const PROMPT = `You are helping a small clinic sort biomedical waste according to India's CPCB Bio-Medical Waste Management Rules colour-coding scheme. Look at this photo of a single waste item and identify it. Then classify it into exactly one of these four categories:
-YELLOW — human anatomical waste, soiled waste, expired medicines, chemical or cytotoxic waste, blood-soaked material
-RED — contaminated recyclable plastics: tubing, IV sets, catheters, gloves, syringe barrels without needles
-WHITE — sharps: needles, syringes with fixed needles, blades, scalpels, anything that can pierce skin
-BLUE — broken glass, metal implants, ampoules, vials
-If the item doesn't look like biomedical waste at all, say so instead of forcing a category.
-Respond in exactly this format: ITEM: <name> | CATEGORY: <Yellow/Red/White/Blue/Not biomedical waste> | REASON: <one short sentence citing what about the item places it there>`;
+// Grounding: the colour rules every answer must follow (BMW Management Rules 2016, Schedule I, as amended)
+const CPCB_RULES = `India's Bio-Medical Waste Management Rules, 2016 (Schedule I) colour coding:
+YELLOW: human and animal anatomical waste; soiled waste (dressings, cotton swabs, gauze, plaster casts, bags and linen
+contaminated with blood or body fluids); expired or discarded medicines; cytotoxic drugs and items contaminated with them;
+chemical waste; microbiology and lab waste (cultures, specimens).
+RED: contaminated recyclable plastic: tubing, IV sets, bottles, catheters, urine bags, syringes WITHOUT needles,
+vacutainers with needles cut, gloves.
+WHITE (translucent, puncture-proof): sharps including metal: needles, syringes with fixed needles, needles from needle
+tip cutters or burners, scalpels, blades, lancets, anything that can cut or pierce skin.
+BLUE (cardboard box): glassware: broken or discarded glass, medicine vials and ampoules (except those contaminated with
+cytotoxic drugs, which go in YELLOW); metallic body implants.
+If the item is not biomedical waste (e.g. paper, food wrapper, household rubbish), the category is None.`;
+
+const RESULT_SCHEMA = {
+  type: "object",
+  properties: {
+    item: { type: "string", description: "Short name of the item" },
+    category: { type: "string", enum: CATEGORIES },
+    confidence: { type: "number", description: "0 to 1: how sure you are of the category" },
+    reason: { type: "string", description: "One short sentence: what about the item places it in this category" },
+    handling: { type: "string", description: "One short, practical safety step for disposing of it" },
+    heard: { type: "string", description: "Voice only: what the person said, in their own language and script" },
+  },
+  required: ["item", "category", "confidence", "reason", "handling"],
+};
+const BRIEF_SCHEMA = {
+  type: "object",
+  properties: {
+    headline: { type: "string" },
+    points: { type: "array", items: { type: "string" }, maxItems: 4 },
+    actions: { type: "array", items: { type: "string" }, maxItems: 3 },
+  },
+  required: ["headline", "points", "actions"],
+};
+
+const classifyPrompt = (lang: string) => `${CPCB_RULES}
+
+You are helping staff at a small Indian clinic put one biomedical waste item in the right bag. Look at the photo,
+identify the single main item, and classify it using only the rules above. Be careful with syringes: with a needle
+attached it is WHITE, the barrel alone is RED. Give your confidence honestly; if the photo is unclear, say so with a low
+confidence. Write "item", "reason" and "handling" in ${lang}. Answer as JSON matching the schema.`;
+
+const voicePrompt = (lang: string) => `${CPCB_RULES}
+
+This audio is a clinic worker describing one waste item. They may speak Hindi, Marathi, Tamil, Telugu, Bengali,
+Kannada, Malayalam, Gujarati, Punjabi, Urdu, English or another Indian language, possibly mixing languages. Put what they
+said in "heard" (their own words and script). Then identify the item and classify it using only the rules above. If the
+description is unclear or doesn't name a waste item, give a low confidence. Write "item", "reason" and "handling" in
+${lang}. Answer as JSON matching the schema.`;
+
+const briefPrompt = (lang: string, data: unknown) => `You assist a municipal officer who monitors biomedical waste
+collection from small clinics in their city. Below are today's figures from the CleanCare dashboard as JSON.
+Exception types: missed = bag left behind at the clinic's pickup; overdue = not collected within 24 h of logging;
+weight = weight changed by over 10% at pickup; arrival = weight changed by over 10% at the treatment facility (CBWTF);
+stuck = collected but not received at the CBWTF within 24 h.
+
+Write a short daily brief in ${lang}: a one-line headline, up to 4 key points and up to 3 concrete follow-up actions
+(name the clinics or bag IDs involved). Use ONLY these figures; never invent numbers, clinics or causes. If everything
+is on track, say so briefly. Answer as JSON matching the schema.
+
+${JSON.stringify(data)}`;
 
 const recent = new Map<string, number[]>();
 
@@ -37,6 +98,8 @@ function corsHeaders(origin: string) {
   };
 }
 
+const isBase64 = (s: unknown) => typeof s === "string" && s.length > 0 && s.length <= MAX_BASE64_CHARS && /^[A-Za-z0-9+/=]+$/.test(s);
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin") ?? "";
   const cors = corsHeaders(origin);
@@ -47,7 +110,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Use POST" }, 405);
   if (!ALLOWED_ORIGINS.includes(origin)) return reply({ error: "Origin not allowed" }, 403);
 
-  // Light abuse protection: the endpoint is public, and every call costs money
+  // Light abuse protection: the endpoint is public, and every call uses the shared quota
   const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
   const now = Date.now();
   const hits = (recent.get(ip) ?? []).filter((t) => now - t < 60_000);
@@ -55,94 +118,91 @@ Deno.serve(async (req) => {
   hits.push(now);
   recent.set(ip, hits);
 
-  const geminiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
-  const claudeKey = Deno.env.get("ANTHROPIC_API_KEY")?.trim();
-  if (!geminiKey && !claudeKey) return reply({ error: "Set GEMINI_API_KEY or ANTHROPIC_API_KEY" }, 503);
+  const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+  if (!apiKey) return reply({ error: "Set GEMINI_API_KEY" }, 503);
 
-  let image: string, mediaType: string;
+  let body: Record<string, unknown>;
   try {
-    ({ image, mediaType } = await req.json());
+    body = await req.json();
   } catch {
     return reply({ error: "Body must be JSON" }, 400);
   }
-  if (typeof image !== "string" || !image || image.length > MAX_BASE64_CHARS || !/^[A-Za-z0-9+/=]+$/.test(image)) {
-    return reply({ error: "image must be base64 and under ~2 MB" }, 400);
-  }
-  if (!MEDIA_TYPES.includes(mediaType)) return reply({ error: `mediaType must be one of ${MEDIA_TYPES.join(", ")}` }, 400);
+  const task = body.task ?? "classify";
+  // The language name goes into the prompt, so only plain names are accepted ("Hindi", "Odia (Oriya)")
+  const lang = typeof body.lang === "string" && /^[A-Za-z][A-Za-z ()-]{1,39}$/.test(body.lang) ? body.lang : "English";
 
   try {
-    const text = geminiKey
-      ? await askGemini(geminiKey, image, mediaType)
-      : await askClaude(claudeKey!, image, mediaType);
-    if (!text) return reply({ error: "Empty AI reply" }, 502);
-    return reply({ text });
+    if (task === "classify") {
+      if (!isBase64(body.image)) return reply({ error: "image must be base64 and under ~2 MB" }, 400);
+      if (!IMAGE_TYPES.includes(body.mediaType as string)) return reply({ error: `mediaType must be one of ${IMAGE_TYPES.join(", ")}` }, 400);
+      const json = await askGemini(apiKey, [{ inline_data: { mime_type: body.mediaType, data: body.image } }, { text: classifyPrompt(lang) }], RESULT_SCHEMA);
+      return reply({ result: cleanResult(json) });
+    }
+    if (task === "voice") {
+      if (!isBase64(body.audio)) return reply({ error: "audio must be base64 WAV and under ~2 MB" }, 400);
+      const json = await askGemini(apiKey, [{ inline_data: { mime_type: "audio/wav", data: body.audio } }, { text: voicePrompt(lang) }], RESULT_SCHEMA);
+      return reply({ result: cleanResult(json) });
+    }
+    if (task === "brief") {
+      const size = JSON.stringify(body.data ?? null).length;
+      if (!body.data || typeof body.data !== "object" || size > MAX_BRIEF_CHARS) return reply({ error: "data must be an object under 20 KB" }, 400);
+      const json = await askGemini(apiKey, [{ text: briefPrompt(lang, body.data) }], BRIEF_SCHEMA);
+      return reply({ brief: cleanBrief(json) });
+    }
+    return reply({ error: "task must be classify, voice or brief" }, 400);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);
     return reply({ error: "AI service error" }, 502);
   }
 });
 
-// Google Gemini, generateContent API. Moves on to the next model when one is busy or rate-limited.
-async function askGemini(apiKey: string, image: string, mediaType: string): Promise<string> {
-  let lastError = "";
-  for (const model of GEMINI_MODELS) {
-    const started = Date.now();
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          role: "user",
-          parts: [
-            { inline_data: { mime_type: mediaType, data: image } },
-            { text: PROMPT },
-          ],
-        }],
-        // Minimal thinking keeps replies quick. Thinking still counts toward maxOutputTokens
-        // on Gemini 3.x, so leave headroom beyond the one-line answer.
-        generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "minimal" } },
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    console.log(`Gemini ${model} answered in ${Date.now() - started} ms (HTTP ${res.status})`);
-    if (res.ok) {
-      type Part = { text?: string; thought?: boolean };
-      const parts: Part[] = body.candidates?.[0]?.content?.parts ?? [];
-      return parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("").trim();
-    }
-    lastError = `Gemini ${model} error ${res.status} ${JSON.stringify(body.error ?? body)}`;
-    if (res.status !== 429 && res.status !== 503) break; // only busy/limit errors are worth another model
-  }
-  throw new Error(lastError);
+// Only well-formed fields reach the app: known category, confidence clamped to 0-1, short strings
+const str = (v: unknown, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+function cleanResult(r: Record<string, unknown>) {
+  const category = CATEGORIES.find((c) => c.toLowerCase() === String(r.category ?? "").toLowerCase());
+  if (!category) throw new Error(`Unexpected category in reply: ${JSON.stringify(r).slice(0, 300)}`);
+  const confidence = Math.min(1, Math.max(0, Number(r.confidence) || 0));
+  return { item: str(r.item, 80), category, confidence, reason: str(r.reason), handling: str(r.handling), heard: str(r.heard) };
+}
+function cleanBrief(b: Record<string, unknown>) {
+  const list = (v: unknown, n: number) => (Array.isArray(v) ? v.map((x) => str(x)).filter(Boolean).slice(0, n) : []);
+  return { headline: str(b.headline, 200), points: list(b.points, 4), actions: list(b.actions, 3) };
 }
 
-// Anthropic Claude, Messages API
-async function askClaude(apiKey: string, image: string, mediaType: string): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 300,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
-          { type: "text", text: PROMPT },
-        ],
-      }],
-    }),
-  });
-  if (!res.ok) throw new Error(`Anthropic API error ${res.status} ${await res.text()}`);
-  const message = await res.json();
-  if (message.stop_reason === "refusal") throw new Error("Claude declined this image");
-  return (message.content ?? [])
-    .filter((b: { type: string }) => b.type === "text")
-    .map((b: { text: string }) => b.text)
-    .join("")
-    .trim();
+// Google Gemini generateContent with JSON output. Moves on to the next model when one is busy or rate-limited.
+// If a model rejects the JSON schema, it retries once with JSON output only (the prompt still describes the shape).
+async function askGemini(apiKey: string, parts: unknown[], schema: unknown): Promise<Record<string, unknown>> {
+  let lastError = "";
+  for (const model of GEMINI_MODELS) {
+    for (const withSchema of [true, false]) {
+      const started = Date.now();
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts }],
+          // Minimal thinking keeps replies quick; thinking still counts toward maxOutputTokens on Gemini 3.x
+          generationConfig: {
+            maxOutputTokens: 2048,
+            temperature: 0.2,
+            thinkingConfig: { thinkingLevel: "minimal" },
+            responseMimeType: "application/json",
+            ...(withSchema ? { responseJsonSchema: schema } : {}),
+          },
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      console.log(`Gemini ${model}${withSchema ? "" : " (no schema)"} answered in ${Date.now() - started} ms (HTTP ${res.status})`);
+      if (res.ok) {
+        type Part = { text?: string; thought?: boolean };
+        const out: Part[] = body.candidates?.[0]?.content?.parts ?? [];
+        const text = out.filter((p) => p.text && !p.thought).map((p) => p.text).join("").trim();
+        return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+      }
+      lastError = `Gemini ${model} error ${res.status} ${JSON.stringify(body.error ?? body).slice(0, 500)}`;
+      if (!(res.status === 400 && withSchema)) break; // only a rejected schema is worth retrying without it
+    }
+    if (!/error (429|503)/.test(lastError)) break; // only busy/limit errors are worth another model
+  }
+  throw new Error(lastError);
 }

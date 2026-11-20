@@ -16,7 +16,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
-<script src="translations.js" onerror="window.__i18nFailed = true"></script>
+<!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
+<script src="translations.js?v=2.1.0" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -24,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.1.0" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -527,6 +528,30 @@
   .intro-actions .btn { flex: 1; }
   .intro-skip { margin-top: 14px; font-size: 13px; }
   a.btn { text-decoration: none; }
+  /* Gemini: richer results, voice and the daily brief */
+  .assist-handling { display: flex; gap: 8px; align-items: flex-start; background: var(--warn-bg); border: 1px solid var(--warn-border);
+    border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 13px; }
+  .assist-handling svg.i { width: 16px; height: 16px; color: var(--orange-ink); margin-top: 1px; }
+  .assist-conf { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+  .assist-heard { font-size: 13px; color: var(--text-2); margin: 10px 0 0; font-style: italic; }
+  .assist-thumb.voice { display: grid; place-items: center; color: var(--green-ink); background: var(--green-soft); }
+  .assist-thumb.voice svg.i { width: 34px; height: 34px; }
+  .voice-box { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+  .mic-btn { width: 64px; height: 64px; border-radius: 50%; border: 0; background: var(--green-dark); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .mic-btn svg.i { width: 28px; height: 28px; }
+  .mic-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+  .mic-btn.on { background: #b91c1c; animation: mic-pulse 1.2s infinite; }
+  @keyframes mic-pulse { from { box-shadow: 0 0 0 0 rgba(185, 28, 28, .45); } to { box-shadow: 0 0 0 14px rgba(185, 28, 28, 0); } }
+  @media (prefers-reduced-motion: reduce) { .mic-btn.on { animation: none; } }
+  .voice-state { font-weight: 600; font-size: 14px; }
+  .ai-brief h2 { display: flex; align-items: center; gap: 6px; }
+  .ai-brief h2 svg.i { color: var(--green-ink); }
+  .ai-brief .card-head { flex-wrap: wrap; gap: 10px; }
+  .brief-head { font-weight: 600; font-size: 15px; margin: 0 0 8px; }
+  .brief-list { margin: 0 0 10px; padding-inline-start: 20px; }
+  .brief-list li { margin-bottom: 4px; }
+  .brief-h { font-size: 13px; margin: 10px 0 4px; }
+  .brief-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
   .about-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
   .about-head .brand-logo { width: 48px; height: 48px; }
   .modal .about-ver { margin: 0; font-size: 12px; }
@@ -852,6 +877,14 @@
           <div class="stat"><div class="tile red" data-icon="alert"></div><div><div class="l" data-i18n="monitor.exceptions">Exceptions</div><div class="n" id="stEx">0</div><div class="s red" id="stExSub"></div></div></div>
         </div>
 
+        <div class="card ai-brief" id="briefCard">
+          <div class="card-head">
+            <div><h2><span data-icon="sparkle"></span> <span data-i18n="brief.title">AI daily brief</span></h2><p data-i18n="brief.sub">Google Gemini summarises today's figures and suggests follow-ups, in your language</p></div>
+            <button class="btn" type="button" id="briefBtn"><span data-icon="sparkle"></span><span data-i18n="brief.make">Write today's brief</span></button>
+          </div>
+          <div id="briefBody" aria-live="polite"></div>
+        </div>
+
         <div class="card">
           <div class="card-head"><div><h2 data-i18n="monitor.overview">Waste overview</h2><p id="overviewSub">Weight logged today by bag category</p></div></div>
           <div class="cats" id="catCards"></div>
@@ -1116,8 +1149,9 @@ function exitDemo() {
 }
 const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
-// Shown in About. Bump both with each release of the web app (the Android app has its own version).
-const APP_VERSION = '2.0.0';
+// Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
+// "?v=" in the page head); the Android app has its own version.
+const APP_VERSION = '2.1.0';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -1284,6 +1318,8 @@ const ICONS = {
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
   trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  sparkle: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
@@ -2060,24 +2096,117 @@ function parseSuggestion(text) {
   return { item: out.ITEM, category, reason: out.REASON || '', source: 'ai' };
 }
 
-async function aiSuggest(base64Jpeg, ctrl = new AbortController()) {
+// Calls the Gemini edge function with { task, ... }; replies come back in the chosen language.
+// Older deployments only understood photos and answered { text }; newer ones answer { result } or { brief }.
+async function askAI(payload, ctrl = new AbortController()) {
   if (!AI_ENDPOINT) throw new Error('No AI endpoint configured');
   const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
   try {
     const res = await fetch(AI_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: CFG.supabaseAnonKey },
-      body: JSON.stringify({ image: base64Jpeg, mediaType: 'image/jpeg' }),
+      body: JSON.stringify({ ...payload, lang: langMeta(lang).en }),
       signal: ctrl.signal,
     });
     if (!res.ok) throw new Error(`AI service returned ${res.status}`);
-    const { text } = await res.json();
-    const parsed = parseSuggestion(text);
-    if (!parsed) throw Object.assign(new Error(`Unreadable AI reply: ${text}`), { unidentified: true });
-    return parsed;
+    return await res.json();
   } finally {
     clearTimeout(timer);
   }
+}
+// A bag colour from a photo ({ task: 'classify', image }) or a spoken description ({ task: 'voice', audio })
+async function aiSuggest(payload, ctrl) {
+  const reply = await askAI(payload, ctrl);
+  if (reply.result) {
+    const r = reply.result;
+    return { item: r.item, category: r.category === 'None' ? 'none' : r.category, reason: r.reason, handling: r.handling,
+      confidence: r.confidence, heard: r.heard, source: 'ai' };
+  }
+  const parsed = parseSuggestion(reply.text);
+  if (!parsed) throw Object.assign(new Error(`Unreadable AI reply: ${reply.text}`), { unidentified: true });
+  return parsed;
+}
+
+// ---------- voice: describe the item aloud in any language ----------
+// Records up to 8 s, converts it to 16 kHz mono WAV (a format Gemini reads from every phone's recorder) and sends it.
+let voiceRec = null;     // { rec, stream, timer, cancelled } while recording
+let assistMode = 'photo'; // which check "Try again" repeats
+async function toWav(blob) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  const audio = await ctx.decodeAudioData(await blob.arrayBuffer());
+  ctx.close();
+  const rate = 16000;
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(audio.duration * rate)), rate);
+  const src = off.createBufferSource();
+  src.buffer = audio;
+  src.connect(off.destination);
+  src.start();
+  const pcm = (await off.startRendering()).getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const tag = (at, text) => [...text].forEach((ch, i) => out.setUint8(at + i, ch.charCodeAt(0)));
+  tag(0, 'RIFF'); out.setUint32(4, 36 + pcm.length * 2, true); tag(8, 'WAVE'); tag(12, 'fmt ');
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, rate, true);
+  out.setUint32(28, rate * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true); tag(36, 'data');
+  out.setUint32(40, pcm.length * 2, true);
+  pcm.forEach((v, i) => out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v)) * 0x7fff, true));
+  const bytes = new Uint8Array(out.buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function stopVoice() { if (voiceRec && voiceRec.rec.state === 'recording') voiceRec.rec.stop(); }
+function cancelVoice() {
+  if (!voiceRec) return;
+  voiceRec.cancelled = true;
+  stopVoice();
+  voiceRec = null;
+}
+function showVoice(noteKey) {
+  stopAssistCamera();
+  cancelCheck();
+  cancelVoice();
+  assistPhoto = null;
+  assistMode = 'voice';
+  assistRedo = () => showVoice(noteKey);
+  $('assistPanel').innerHTML = `${assistHead('assist.voiceTitle')}
+    ${noteKey ? `<div class="msg warn" style="display:block">${esc(t(noteKey))}</div>` : ''}
+    <p class="assist-reason">${esc(t('assist.voiceHint'))}</p>
+    <div class="voice-box">
+      <button class="mic-btn" type="button" data-assist="rec" aria-pressed="false">${icon('mic')}</button>
+      <span class="voice-state" id="voiceState" aria-live="polite">${esc(t('assist.voiceStart'))}</span>
+    </div>
+    <div class="assist-actions">
+      <button class="btn ghost" type="button" data-assist="photo">${icon('camera')}${esc(t('assist.takePhoto'))}</button>
+      <button class="btn ghost" type="button" data-assist="offline">${esc(t('assist.nameForOffline'))}</button>
+    </div>`;
+}
+async function toggleVoice() {
+  if (voiceRec) return stopVoice();
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && window.isSecureContext)) return showVoice('assist.noMic');
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (err) { return showVoice('assist.noMic'); }
+  if ($('assistPanel').hidden || assistMode !== 'voice') { stream.getTracks().forEach((tr) => tr.stop()); return; }
+  const rec = new MediaRecorder(stream);
+  const chunks = [];
+  const v = { rec, stream, cancelled: false };
+  rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = async () => {
+    stream.getTracks().forEach((tr) => tr.stop());
+    clearTimeout(v.timer);
+    if (voiceRec === v) voiceRec = null;
+    if (v.cancelled) return;
+    try {
+      runCheck({ task: 'voice', audio: await toWav(new Blob(chunks, { type: rec.mimeType })) }, 'voice');
+    } catch (err) { console.warn('Voice clip unusable:', err); showVoice('assist.voiceFailed'); }
+  };
+  rec.start();
+  v.timer = setTimeout(stopVoice, 8000);
+  voiceRec = v;
+  const btn = document.querySelector('[data-assist="rec"]');
+  btn.classList.add('on');
+  btn.setAttribute('aria-pressed', 'true');
+  $('voiceState').textContent = t('assist.listening');
 }
 
 // Shrink photos before sending: faster, cheaper, and plenty for recognising an item
@@ -2100,6 +2229,7 @@ function cancelCheck() {
 }
 function closeAssist() {
   cancelCheck();
+  cancelVoice();
   stopAssistCamera();
   assistPhoto = null;
   assistRedo = null;
@@ -2118,10 +2248,15 @@ function setScanAssist(value) {
 
 const assistHead = (titleKey) => `<div class="assist-head"><b>${esc(t(titleKey))}</b><button class="assist-close" type="button" data-assist="close">${esc(t('assist.close'))}</button></div>`;
 const uploadButton = (primary) => `<label class="btn ${primary ? '' : 'ghost '}file-btn">${icon('image')}${esc(t('assist.upload'))}<input type="file" accept="image/*" capture="environment" data-assist-file></label>`;
-const assistThumb = () => `<img class="assist-thumb" src="${assistPhoto}" alt="${esc(t('assist.photoAlt'))}">`;
+const assistThumb = () => (assistPhoto
+  ? `<img class="assist-thumb" src="${assistPhoto}" alt="${esc(t('assist.photoAlt'))}">`
+  : `<div class="assist-thumb voice" aria-hidden="true">${icon('mic')}</div>`);
 
 async function openAssist() {
   stopScanner();
+  cancelVoice();
+  cancelCheck();
+  assistMode = 'photo';
   const panel = $('assistPanel');
   panel.hidden = false;
   assistRedo = null;
@@ -2130,12 +2265,13 @@ async function openAssist() {
     <div class="assist-actions">
       <button class="btn" type="button" data-assist="shoot">${icon('camera')}${esc(t('assist.takePhoto'))}</button>
       ${uploadButton(false)}
+      ${AI_ENDPOINT ? `<button class="btn ghost" type="button" data-assist="voice">${icon('mic')}${esc(t('assist.voice'))}</button>` : ''}
     </div>`;
   const noCamera = (whyKey) => {
     assistRedo = () => noCamera(whyKey);
     panel.innerHTML = `${assistHead('assist.photograph')}
       <div class="msg warn" style="display:block">${esc(t(whyKey))} ${esc(t('assist.noCam.tail'))}</div>
-      <div class="assist-actions">${uploadButton(true)}</div>`;
+      <div class="assist-actions">${uploadButton(true)}${AI_ENDPOINT ? `<button class="btn ghost" type="button" data-assist="voice">${icon('mic')}${esc(t('assist.voice'))}</button>` : ''}</div>`;
   };
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !window.isSecureContext) {
     return noCamera('assist.noCam.browser');
@@ -2154,13 +2290,16 @@ async function openAssist() {
 
 async function checkPhoto(dataUrl) {
   stopAssistCamera();
-  cancelCheck();
   assistPhoto = dataUrl;
+  runCheck({ task: 'classify', image: dataUrl.split(',')[1], mediaType: 'image/jpeg' }, 'photo');
+}
+async function runCheck(payload, mode) {
+  cancelCheck();
   assistRedo = null;
   const panel = $('assistPanel');
   panel.innerHTML = `${assistHead('assist.checkingTitle')}
     <div class="assist-loading"><span class="spinner"></span>
-      <span>${esc(t('assist.checking'))}<small id="assistWait">${esc(t('assist.wait'))}</small></span></div>
+      <span>${esc(t(mode === 'voice' ? 'assist.voiceChecking' : 'assist.checking'))}<small id="assistWait">${esc(t('assist.wait'))}</small></span></div>
     <div class="assist-actions"><button class="btn ghost" type="button" data-assist="skip">${esc(t('assist.skip'))}</button></div>`;
   const check = { ctrl: new AbortController(), started: Date.now() };
   check.timer = setInterval(() => {
@@ -2169,13 +2308,14 @@ async function checkPhoto(dataUrl) {
   }, 5000);
   assistCheck = check;
   try {
-    const sug = await aiSuggest(dataUrl.split(',')[1], check.ctrl);
+    const sug = await aiSuggest(payload, check.ctrl);
     if (assistCheck !== check) return; // skipped or closed meanwhile
     showSuggestion(sug);
   } catch (err) {
     if (assistCheck !== check) return; // staff skipped: nothing to show
     console.warn('AI suggestion unavailable:', err);
-    if (err.unidentified) showUnidentified();
+    if (mode === 'voice') showVoice('assist.voiceFailed');
+    else if (err.unidentified) showUnidentified();
     else askItemName(); // no drama: offline keyword table
   } finally {
     if (assistCheck === check) { clearInterval(check.timer); assistCheck = null; }
@@ -2246,8 +2386,10 @@ function showSuggestion(sug) {
         <p class="assist-item">${esc(sug.item || t('assist.unidentifiedItem'))}</p>
       </div>
     </div>`;
+  const heard = sug.heard ? `<p class="assist-heard">${esc(t('assist.heard', { text: sug.heard }))}</p>` : '';
+  const lowConf = sug.confidence != null && sug.confidence < 0.6;
   if (sug.category === 'none') {
-    panel.innerHTML = `${assistHead('assist.result')}${top}
+    panel.innerHTML = `${assistHead('assist.result')}${top}${heard}
       <div class="assist-badge none">${esc(t('assist.notBiomedical'))}</div>
       ${reason ? `<p class="assist-reason">${esc(reason)}</p>` : ''}
       <p class="assist-reason" style="margin-top:6px">${esc(t('assist.contactNote'))}</p>
@@ -2256,11 +2398,15 @@ function showSuggestion(sug) {
   }
   panel.dataset.category = sug.category;
   panel.dataset.source = sug.source;
-  panel.innerHTML = `${assistHead('assist.result')}${top}
+  panel.innerHTML = `${assistHead('assist.result')}${top}${heard}
     <div class="assist-badge ${sug.category}">${esc(catName(sug.category))}<small>· ${esc(catDesc(sug.category))}</small></div>
     ${reason ? `<p class="assist-reason">${esc(reason)}</p>` : ''}
+    ${sug.handling ? `<div class="assist-handling">${icon('alert')}<span><b>${esc(t('assist.handling'))}:</b> ${esc(sug.handling)}</span></div>` : ''}
+    ${sug.confidence != null ? `<p class="assist-conf">${esc(t('assist.confidence', { pct: Math.round(sug.confidence * 100) }))}</p>` : ''}
+    ${lowConf ? `<div class="msg warn" style="display:block">${esc(t('assist.lowConf'))}</div>` : ''}
     <div class="assist-actions">
       <button class="btn" type="button" data-assist="use">${icon('check')}${esc(t('assist.use'))}</button>
+      ${lowConf ? `<button class="btn ghost" type="button" data-assist="again">${esc(t('assist.tryAgain'))}</button>` : ''}
       <button class="btn ghost" type="button" data-assist="manual">${esc(t('assist.notThis'))}</button>
     </div>`;
 }
@@ -2295,6 +2441,10 @@ $('assistPanel').addEventListener('click', (e) => {
   else if (action === 'skip') { cancelCheck(); showSkipped(); }
   else if (action === 'offline') askItemName(undefined, true);
   else if (action === 'manual') chooseManually();
+  else if (action === 'voice') showVoice();
+  else if (action === 'rec') toggleVoice();
+  else if (action === 'photo') openAssist();
+  else if (action === 'again') { if (assistMode === 'voice') showVoice(); else openAssist(); }
   else if (action === 'shoot') {
     const v = $('assistVideo');
     if (!v || !v.videoWidth) return;
@@ -3309,6 +3459,47 @@ function renderBadges() {
   $('navFacility').textContent = fac || '';
 }
 
+// ---------- AI daily brief (Monitor) ----------
+// Only today's figures are sent (bag IDs, clinic names, colours, weights, exception types): no patient data
+function briefData() {
+  const today = todaysBags();
+  const kgOf = (list) => Math.round(sumKg(list) * 100) / 100;
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    clinicsTracked: CLINICS.length,
+    today: { bags: today.length, kg: kgOf(today), collected: today.filter((b) => b.status === 'collected').length,
+      aiCheckedBags: today.filter((b) => b.selectionMethod === 'camera-assisted').length },
+    byColour: Object.fromEntries(CAT_ORDER.map((c) => {
+      const bags = today.filter((b) => b.category === c);
+      return [c, { bags: bags.length, kg: kgOf(bags) }];
+    })),
+    exceptions: exceptions().slice(0, 30).map(({ bag: b, type }) => ({ bag: b.id, clinic: clinicName(b.clinic), colour: b.category, type })),
+    inactiveClinics: inactiveClinics().map((c) => ({ clinic: c.name, daysSinceLastBag: c.days })),
+  };
+}
+async function makeBrief() {
+  const btn = $('briefBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  $('briefBody').innerHTML = `<div class="assist-loading"><span class="spinner"></span><span>${esc(t('brief.writing'))}</span></div>`;
+  try {
+    const { brief } = await askAI({ task: 'brief', data: briefData() });
+    if (!brief || !brief.headline) throw new Error('No brief in the reply');
+    const list = (items, cls = '') => (items.length ? `<ul class="brief-list ${cls}">${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '');
+    $('briefBody').innerHTML = `<p class="brief-head">${esc(brief.headline)}</p>${list(brief.points)}
+      ${brief.actions.length ? `<h3 class="brief-h">${esc(t('brief.actions'))}</h3>${list(brief.actions, 'actions')}` : ''}
+      <p class="brief-note">${esc(t('brief.note', { time: fmtTime(new Date().toISOString()) }))}</p>`;
+    setText(btn.lastElementChild, 'brief.again');
+  } catch (err) {
+    console.warn('AI brief unavailable:', err);
+    $('briefBody').innerHTML = `<div class="msg err" style="display:block">${esc(t('brief.failed'))}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+$('briefCard').hidden = !AI_ENDPOINT;
+$('briefBtn').addEventListener('click', makeBrief);
+
 // ---------- reset & init ----------
 function openReset() {
   setText($('resetText'), cloud ? 'reset.textCloud' : 'reset.textLocal');
@@ -3462,7 +3653,7 @@ function loadLang(code) {
   if (I18N[code]) return Promise.resolve(true);
   return new Promise((resolve) => {
     const el = document.createElement('script');
-    el.src = `translations/${code}.js`;
+    el.src = `translations/${code}.js?v=${APP_VERSION}`;
     el.onload = () => resolve(!!I18N[code]);
     el.onerror = () => resolve(false);
     document.head.appendChild(el);
