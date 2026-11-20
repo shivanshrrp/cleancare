@@ -1,0 +1,41 @@
+# Runs every automated check on each push: the rules, the server function, the database guards and the translations.
+name: Checks
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-only
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Rules (rules.js)
+        run: deno run --allow-read tools/test-rules.js
+
+      - name: Server function (Gemini and the database stubbed)
+        run: GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts
+
+      - name: Translations
+        run: deno run --allow-read tools/check-translations.js
+
+      - name: Database guards on a real Postgres
+        run: |
+          # The two Supabase pieces supabase-setup.sql expects
+          psql -v ON_ERROR_STOP=1 -c "create role anon nologin; create publication supabase_realtime;"
+          psql -v ON_ERROR_STOP=1 -f supabase-setup.sql
+          # The test always ends by raising "ALL n CHECKS PASSED" so that it rolls back; anything else is a failure
+          psql -f supabase/guard-test.sql 2>&1 | tee guard.log || true
+          grep -q "CHECKS PASSED" guard.log
