@@ -41,6 +41,12 @@
     try { s = JSON.parse(localStorage.getItem('cleancare-session')); } catch (e) {}
     document.documentElement.dataset.auth = s && s.exp > Date.now() ? 'in' : 'out';
   })();
+  // The short introduction shows on a device's first visit, before sign-in
+  (function () {
+    var seen = null;
+    try { seen = localStorage.getItem('cleancare-intro-seen'); } catch (e) {}
+    if (!seen && document.documentElement.dataset.auth === 'out') document.documentElement.dataset.intro = 'show';
+  })();
 </script>
 <style>
   :root {
@@ -505,6 +511,21 @@
   .menu-list { display: grid; gap: 8px; }
   .menu-list .btn { width: 100%; justify-content: flex-start; }
   .menu-close { margin-top: 16px; }
+  .intro { display: none; }
+  html[data-intro="show"] .intro { display: grid; min-height: 100vh; place-items: center; padding: 76px 16px 24px; position: relative; }
+  html[data-intro="show"] .auth, html[data-intro="show"] .app { display: none; }
+  .intro-card { width: 100%; max-width: 400px; text-align: center; }
+  .intro-card .brand-logo { display: block; margin: 0 auto 14px; }
+  .intro-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--green-soft); color: var(--green-ink); display: grid; place-items: center; margin: 0 auto 14px; }
+  .intro-icon svg.i { width: 30px; height: 30px; }
+  .intro-card h1 { font-size: 20px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .intro-card p { color: var(--muted); margin: 0 0 18px; min-height: 63px; }
+  .intro-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+  .intro-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--border-strong); transition: width .2s; }
+  .intro-dots i.on { width: 22px; background: var(--green); }
+  .intro-actions { display: flex; gap: 10px; }
+  .intro-actions .btn { flex: 1; }
+  .intro-skip { margin-top: 14px; font-size: 13px; }
   .auth-or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 18px 0 14px; }
   .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .demo-pick h2 { font-size: 15px; margin: 0 0 2px; }
@@ -614,6 +635,24 @@
 </style>
 </head>
 <body>
+<div class="intro" id="introView" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="auth-top">
+    <button class="icon-btn theme-btn" type="button" aria-pressed="false" aria-label="Switch between light and dark theme" data-i18n-aria="theme.toggle"></button>
+    <button class="lang-btn" type="button" id="langSelIntro" aria-haspopup="dialog" aria-expanded="false" aria-label="Language" data-i18n-aria="lang.label"><span data-icon="globe"></span><span class="lang-cur"></span><span class="chev">▾</span></button>
+  </div>
+  <div class="card intro-card">
+    <img class="brand-logo" id="introLogo" alt="">
+    <div class="intro-icon" id="introIcon"></div>
+    <h1 id="introTitle"></h1>
+    <p id="introText"></p>
+    <div class="intro-dots" id="introDots" aria-hidden="true"></div>
+    <div class="intro-actions">
+      <button class="btn ghost" type="button" id="introBack" data-i18n="intro.back">Back</button>
+      <button class="btn" type="button" id="introNext"><span data-i18n="intro.next">Next</span></button>
+    </div>
+    <button class="link-btn intro-skip" type="button" id="introSkip" data-i18n="intro.skip">Skip</button>
+  </div>
+</div>
 <div class="auth" id="authView">
   <div class="auth-top">
     <button class="icon-btn theme-btn" type="button" aria-pressed="false" aria-label="Switch between light and dark theme" data-i18n-aria="theme.toggle"></button>
@@ -968,6 +1007,7 @@
       </div>
     </fieldset>
     <div class="menu-list">
+      <button class="btn ghost" type="button" id="menuIntro"><span data-icon="help"></span><span data-i18n="menu.intro">How CleanCare works</span></button>
       <button class="btn ghost" type="button" id="menuReset"><span data-icon="reset"></span><span data-i18n="reset.button">Reset Demo</span></button>
       <button class="btn ghost" type="button" id="menuLogout"><span data-icon="logout"></span><span data-i18n="auth.logout">Log out</span></button>
     </div>
@@ -1218,6 +1258,7 @@ const ICONS = {
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
   trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
@@ -3491,6 +3532,42 @@ document.querySelectorAll('.theme-btn').forEach((b) => b.addEventListener('click
 document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => setTheme(r.value)));
 applyTheme();
 
+// ---------- introduction ----------
+// Four short steps, shown once per device before sign-in and any time from the account menu
+const INTRO_KEY = 'cleancare-intro-seen';
+const INTRO_ICONS = ['package', 'truck', 'alert', 'gift'];
+let introStep = 0;
+function renderIntro() {
+  const n = introStep + 1;
+  $('introIcon').innerHTML = icon(INTRO_ICONS[introStep]);
+  setText($('introTitle'), `intro.${n}.t`);
+  setText($('introText'), `intro.${n}.d`);
+  $('introDots').innerHTML = INTRO_ICONS.map((_, i) => `<i${i === introStep ? ' class="on"' : ''}></i>`).join('');
+  $('introBack').hidden = introStep === 0;
+  setText($('introNext').firstElementChild, n === INTRO_ICONS.length ? 'intro.start' : 'intro.next');
+}
+function openIntro() {
+  introStep = 0;
+  renderIntro();
+  document.documentElement.dataset.intro = 'show';
+  $('introNext').focus();
+}
+function closeIntro() {
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {}
+  delete document.documentElement.dataset.intro;
+  // back to the account button that's on screen (desktop or phone header), or to sign-in
+  const back = me ? [$('menuBtn'), $('menuBtnMobile')].find((el) => el.offsetParent) : $('authId');
+  if (back) back.focus({ preventScroll: true });
+}
+$('introLogo').src = document.querySelector('.sidebar .brand-logo').src;
+$('introNext').addEventListener('click', () => {
+  if (introStep < INTRO_ICONS.length - 1) { introStep++; renderIntro(); } else closeIntro();
+});
+$('introBack').addEventListener('click', () => { introStep--; renderIntro(); $('introNext').focus(); });
+$('introSkip').addEventListener('click', closeIntro);
+$('menuIntro').addEventListener('click', () => { closeMenu(); openIntro(); });
+if (document.documentElement.dataset.intro) renderIntro();
+
 // ---------- demo ----------
 document.querySelectorAll('[data-demo-role]').forEach((b) => b.addEventListener('click', () => {
   try {
@@ -3550,6 +3627,8 @@ if (me) {
   } else if (cloud) {
     startCloud();
   }
+} else if (document.documentElement.dataset.intro) {
+  $('introNext').focus({ preventScroll: true });
 } else {
   $('authId').focus({ preventScroll: true });
 }
