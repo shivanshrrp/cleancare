@@ -3,6 +3,7 @@
 const calls: Record<string, unknown>[] = [];
 const dbCalls: string[] = [];
 let dbStatus = 200;
+let geminiUp = true;
 Deno.env.set("SUPABASE_URL", "https://db.test");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "service");
 let script: Array<{ status: number; body: unknown }> = [];
@@ -14,6 +15,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     return new Response(init?.method === "POST" && url.endsWith("redemptions") ? init.body as string : "", { status: dbStatus });
   }
   if (!url.startsWith("https://generativelanguage.googleapis.com/")) return realFetch(input, init);
+  if (!init?.body) return new Response(geminiUp ? "{}" : "", { status: geminiUp ? 200 : 403 }); // health: model metadata
   calls.push({ url, ...JSON.parse(String(init?.body)) });
   const next = script.shift() ?? { status: 500, body: {} };
   return new Response(JSON.stringify(next.body), { status: next.status });
@@ -76,5 +78,12 @@ assert((await post({ task: "reset", bags: [{ id: "HPC-0002", selection_method: "
 assert((await post({ task: "reset", bags: "x", redemptions: [] })).status === 400, "reset: bad body refused");
 dbStatus = 500;
 assert((await post({ task: "reset", bags: [], redemptions: [] })).status === 502, "reset: database error reported");
+// health: reports each dependency without spending generation quota
+dbStatus = 200;
+r = await post({ task: "health" });
+assert(r.status === 200 && r.json.ai.ok && r.json.database.ok && r.json.version && r.json.ai.model, "health: both up, version and model reported");
+geminiUp = false; dbStatus = 500;
+r = await post({ task: "health" });
+assert(r.status === 200 && !r.json.ai.ok && !r.json.database.ok, "health: failures reported, not thrown");
 console.log("all checks passed");
 Deno.exit(0);

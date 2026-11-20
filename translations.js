@@ -566,6 +566,12 @@ window.CLEANCARE_I18N = {
     "brief.actions": "Suggested follow-ups",
     "brief.note": "Written by Google Gemini from today's figures at {time}. Check before acting.",
     "brief.failed": "Couldn't write the brief right now. Try again in a minute.",
+    "common.weightTooHeavy": "A bag can weigh at most {max} kg. Please check the weight.",
+    "health.checking": "Checking the AI and the database…",
+    "health.line": "Gemini AI: {ai} · Shared database: {db}",
+    "health.online": "online",
+    "health.offline": "unavailable",
+    "health.demo": "not used in demo",
     "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
@@ -1094,6 +1100,12 @@ window.CLEANCARE_I18N = {
     "brief.actions": "सुझाए गए अगले कदम",
     "brief.note": "Google Gemini ने {time} पर आज के आँकड़ों से लिखा। कार्रवाई से पहले जाँच लें।",
     "brief.failed": "अभी सारांश नहीं लिखा जा सका। एक मिनट बाद फिर कोशिश करें।",
+    "common.weightTooHeavy": "एक बैग का वज़न अधिकतम {max} किलो हो सकता है। कृपया वज़न जाँचें।",
+    "health.checking": "AI और डेटाबेस की जाँच हो रही है…",
+    "health.line": "Gemini AI: {ai} · साझा डेटाबेस: {db}",
+    "health.online": "चालू",
+    "health.offline": "उपलब्ध नहीं",
+    "health.demo": "डेमो में उपयोग नहीं",
     "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
@@ -1622,6 +1634,12 @@ window.CLEANCARE_I18N = {
     "brief.actions": "सुचवलेली पुढील पावले",
     "brief.note": "Google Gemini ने {time} वाजता आजच्या आकडेवारीवरून लिहिले. कृतीपूर्वी तपासा.",
     "brief.failed": "आत्ता सारांश लिहिता आला नाही. एका मिनिटाने पुन्हा प्रयत्न करा.",
+    "common.weightTooHeavy": "एका पिशवीचे वजन जास्तीत जास्त {max} किलो असू शकते. कृपया वजन तपासा.",
+    "health.checking": "AI आणि डेटाबेस तपासत आहे…",
+    "health.line": "Gemini AI: {ai} · सामायिक डेटाबेस: {db}",
+    "health.online": "सुरू",
+    "health.offline": "उपलब्ध नाही",
+    "health.demo": "डेमोमध्ये वापरला जात नाही",
     "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };

@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
-<script src="translations.js?v=2.1.1" onerror="window.__i18nFailed = true"></script>
+<script src="translations.js?v=2.1.3" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -25,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js?v=2.1.1" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.1.3" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -1074,7 +1074,7 @@
 <div class="modal-backdrop" id="aboutModal" hidden>
   <div class="modal about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
     <div class="about-head"><img class="brand-logo" id="aboutLogo" alt="">
-      <div><h2 id="aboutTitle" data-i18n="about.title">About CleanCare</h2><p class="about-ver" id="aboutVer"></p></div></div>
+      <div><h2 id="aboutTitle" data-i18n="about.title">About CleanCare</h2><p class="about-ver" id="aboutVer"></p><p class="about-ver" id="aboutHealth" aria-live="polite"></p></div></div>
     <p data-i18n="about.text">CleanCare tracks every biomedical waste bag from small clinics to treatment.</p>
     <p data-i18n="about.privacy">No patient data is collected.</p>
     <p data-i18n="about.team">Built by a student team at WeSchool.</p>
@@ -1106,6 +1106,7 @@
   </div>
 </div>
 
+<script src="rules.js?v=2.1.3" onerror="window.__rulesFailed = true"></script>
 <script>
 // ---------- sign-in ----------
 // ponytail: mock accounts checked in the browser. This decides which screens each role sees; it is not security,
@@ -1186,7 +1187,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.1.2';
+const APP_VERSION = '2.1.3';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -1226,20 +1227,6 @@ const TREATMENT_KEYS = {
   'Hydroclave + shredding': 'treat.hydroclave', 'Disinfection + recycling': 'treat.disinfection',
   'Encapsulation': 'treat.encapsulation',
 };
-const WEIGHT_TOLERANCE = 0.10;
-
-// ---------- reward points ----------
-// Clinics earn points, never money: points are spent on healthcare supplies. ₹ figures are a reference only.
-const CLINIC_POINTS = {
-  White: 60,   // sharps: highest hazard
-  Yellow: 50,  // infectious / pathological: high treatment cost
-  Red: 30,     // contaminated plastics: moderate, some recycling value
-  Blue: 20,    // glass / metal: lowest hazard and cost
-};
-// Points per verified kg. Placeholder values, adjustable; the order reflects hazard and treatment cost, not weight.
-const PENALTY_POINTS = -25;     // per mis-sorted bag (colour corrected later, or wrong items found in it)
-const POINTS_PER_RUPEE = 10;    // reference only: roughly 10 points ≈ ₹1 of redemption value
-const GOVT_FUNDED_SHARE = 0.6;  // share of issued points funded by government; the CBWTF funds the rest
 // Supplies clinics can request with points. This list is meant to grow: to add an item, add one line.
 // `id` is stored with each redemption (keep it unique and don't change it). The item's name in each language
 // is the "supply.<id>" text in the language blocks; `name` is the English fallback until those are added.
@@ -1262,11 +1249,6 @@ const itemName = (id) => {
   // this language's text, else English, else the list's own name; a removed item shows its id in history
   return (I18N && ((I18N[lang] && I18N[lang][key]) || (I18N.en && I18N.en[key]))) || (it && it.name) || id;
 };
-
-// ---------- inactive clinics ----------
-// A visibility nudge, never a penalty: a clinic that hasn't logged a bag for this many days is listed on
-// the Monitor and sees a friendly reminder. It doesn't change points.
-const INACTIVITY_DAYS = 3;
 
 // ---------- language ----------
 // All interface text lives in translations.js. t('key', {name: value}) returns it in the chosen
@@ -1401,30 +1383,6 @@ function save() {
 //   logged (clinic) → collected (collector) → in_transit (collector) → received (CBWTF) → treated (CBWTF)
 // Each event is { step, at, role, actor, weight? } plus vehicle / method / certificate where they apply.
 // The events are the bag's history (Track reads them); the columns below hold its current state.
-const STEPS = ['logged', 'collected', 'in_transit', 'received', 'treated'];
-const WEIGHED_STEPS = new Set(['logged', 'collected', 'received']);
-const stepEvent = (b, step) => (b.events || []).find((e) => e.step === step) || null;
-const byTime = (list) => list.slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-const withEvent = (b, ...list) => byTime([...(b.events || []), ...list]);
-
-// Mis-sorts found at a later checkpoint are events too, each carrying its own (negative) points:
-//   reclassified  {from, to}  the collector or CBWTF corrected the bag's colour
-//   contamination {category}  wrong items were mixed into the bag
-const PENALTY_STEPS = new Set(['reclassified', 'contamination']);
-function sortCheckEvents(bag, check, at, role, actor) {
-  const out = [];
-  if (check.category && check.category !== bag.category) {
-    out.push({ step: 'reclassified', at, role, actor, from: bag.category, to: check.category, points: PENALTY_POINTS });
-  }
-  if (check.contaminated) {
-    out.push({ step: 'contamination', at, role, actor, category: check.category || bag.category, points: PENALTY_POINTS });
-  }
-  return out;
-}
-const penaltyEvents = (b) => (b.events || []).filter((e) => PENALTY_STEPS.has(e.step));
-// The colour the clinic logged, even if it was corrected later
-const loggedCategory = (b) => (b.events || []).find((e) => e.step === 'reclassified')?.from || b.category;
-
 // Bags saved before the event history existed: rebuild it from their stage columns
 function eventsFromColumns(b) {
   const list = [{ step: 'logged', at: b.loggedAt, role: 'clinic', actor: b.clinic, weight: b.weight }];
@@ -1787,7 +1745,6 @@ const dateLoc = () => `${lang}-IN-u-nu-latn`;
 const hourOpt = () => (lang === 'en' ? {} : { hourCycle: 'h23' });
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString(dateLoc(), { hour: '2-digit', minute: '2-digit', ...hourOpt() });
 const fmtKg = (n) => (n == null ? '—' : Number(n).toFixed(2));
-const isToday = (iso) => iso && new Date(iso).toDateString() === new Date().toDateString();
 const catCell = (cat) => `<span class="chip"><span class="dot ${esc(cat)}"></span>${esc(catLabel(cat))}</span>`;
 const statusCell = (s) => `<span class="pill ${esc(s)}">${esc(t('status.' + s))}</span>`;
 const sumKg = (bags, key = 'weight') => bags.reduce((sum, b) => sum + (Number(b[key]) || 0), 0);
@@ -1803,6 +1760,7 @@ function parseWeight(raw) {
   if (s === '') return { blank: true };
   const n = Number(s);
   if (!Number.isFinite(n) || n <= 0) return { invalid: true };
+  if (n > MAX_BAG_KG) return { tooHeavy: true };
   return { value: Math.round(n * 100) / 100 };
 }
 
@@ -1814,48 +1772,6 @@ const todaysBags = () => db.bags.filter((b) => isToday(b.loggedAt) || isToday(b.
 const fmtDateTime = (iso) => new Date(iso).toLocaleString(dateLoc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', ...hourOpt() });
 const normId = (s) => { const m = String(s).toUpperCase().match(/CL-[A-Z]{3}-\d{5}/); return m ? m[0] : String(s).trim().toUpperCase(); };
 
-// Latest pickup so far today at this clinic (a bag logged before it and still uncollected was missed)
-function lastPickupAt(clinic, now = Date.now()) {
-  let last = null;
-  for (const b of db.bags) {
-    if (b.clinic !== clinic || b.status !== 'collected' || !isToday(b.collectedAt)) continue;
-    if (Date.parse(b.collectedAt) > now) continue; // not yet happened (sample data uses fixed clock times)
-    if (!last || b.collectedAt > last) last = b.collectedAt;
-  }
-  return last;
-}
-
-const OVERDUE_MS = 24 * 60 * 60 * 1000;
-// Flags shared by the Monitor exceptions and the Track timeline
-// Weight checks at each handover, against the previous weighed checkpoint:
-// collected vs the clinic's weight ("weight"), received at the CBWTF vs pickup ("arrival")
-const HANDOVER_FLAGS = { collected: 'weight', received: 'arrival' };
-function bagFlags(b, now = Date.now()) {
-  const flags = {};
-  let prev = null;
-  for (const e of b.events || []) {
-    if (!WEIGHED_STEPS.has(e.step) || e.weight == null) continue;
-    if (prev && prev.weight) {
-      const d = (e.weight - prev.weight) / prev.weight;
-      if (Math.abs(d) > WEIGHT_TOLERANCE) flags[HANDOVER_FLAGS[e.step]] = { pct: pctStr(d), from: prev.weight, to: e.weight };
-    }
-    prev = e;
-  }
-  if (b.status === 'logged') {
-    const age = now - Date.parse(b.loggedAt);
-    const pickup = lastPickupAt(b.clinic, now);
-    if (age > OVERDUE_MS) flags.overdue = { h: Math.floor(age / 3.6e6) };
-    else if (pickup && b.loggedAt < pickup) flags.missed = { time: pickup };
-  }
-  // CPCB 24-hour rule: collected waste must reach the CBWTF within a day
-  const collected = stepEvent(b, 'collected');
-  if (collected && !stepEvent(b, 'received')) {
-    const age = now - Date.parse(collected.at);
-    if (age > OVERDUE_MS) flags.stuck = { h: Math.floor(age / 3.6e6) };
-  }
-  return flags;
-}
-const pctStr = (d) => `${d > 0 ? '+' : ''}${(d * 100).toFixed(0)}`;
 // Text for a flag; short = the Monitor table version (no weights in brackets)
 function flagText(kind, f, short = false) {
   if (kind === 'weight' || kind === 'arrival') {
@@ -1872,69 +1788,6 @@ function flagText(kind, f, short = false) {
 const fmtPts = (n) => Math.round(n).toLocaleString('en-IN');
 const signedPts = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmtPts(Math.abs(n))}`;
 const rupees = (pts) => `₹${Math.round(pts / POINTS_PER_RUPEE).toLocaleString('en-IN')}`;
-const isThisMonth = (iso, now = new Date()) => {
-  const d = new Date(iso);
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-};
-const happened = (iso) => Date.parse(iso) <= Date.now(); // sample data can hold later clock times
-
-function bagEarning(b) {
-  const received = stepEvent(b, 'received');
-  const collected = stepEvent(b, 'collected');
-  if (!stepEvent(b, 'logged') || !collected || !received || !happened(received.at)) return null;
-  const f = bagFlags(b);
-  if (f.weight || f.arrival) return null; // weights don't match: unverified, earns nothing
-  const kgs = received.weight ?? collected.weight;
-  return { at: received.at, category: b.category, kg: kgs, rate: CLINIC_POINTS[b.category], points: Math.round(kgs * CLINIC_POINTS[b.category]) };
-}
-
-// Everything the Rewards card needs for one clinic
-function clinicPoints(code) {
-  const month = { earned: 0, byCat: {}, penalties: [] };
-  let allTime = 0;
-  for (const b of db.bags) {
-    if (b.clinic !== code) continue;
-    const e = bagEarning(b);
-    if (e) {
-      allTime += e.points;
-      if (isThisMonth(e.at)) {
-        month.earned += e.points;
-        const c = month.byCat[e.category] || (month.byCat[e.category] = { kg: 0, points: 0, bags: 0 });
-        c.kg += e.kg; c.points += e.points; c.bags++;
-      }
-    }
-    for (const p of penaltyEvents(b)) {
-      if (!happened(p.at)) continue;
-      allTime += p.points;
-      if (isThisMonth(p.at)) month.penalties.push({ b, e: p });
-    }
-  }
-  const spent = (db.redemptions || []).filter((r) => r.clinic === code && r.status !== 'Cancelled').reduce((sum, r) => sum + r.points, 0);
-  const deducted = month.penalties.reduce((sum, x) => sum + x.e.points, 0);
-  return { ...month, deducted, net: month.earned + deducted, spent, balance: allTime - spent };
-}
-
-// All clinics by this month's points (earned minus deductions), highest first; equal points share a rank
-function leaderboard() {
-  const rows = CLINICS.map((c) => ({ code: c.code, name: c.name, points: clinicPoints(c.code).net }))
-    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
-  rows.forEach((r) => { r.rank = 1 + rows.filter((x) => x.points > r.points).length; });
-  return rows;
-}
-
-// When each clinic last logged a bag, and whether that's longer ago than INACTIVITY_DAYS (null = never logged)
-function clinicActivity(code, now = Date.now()) {
-  let last = null;
-  for (const b of db.bags) {
-    if (b.clinic !== code || Date.parse(b.loggedAt) > now) continue; // sample data can hold later clock times
-    if (!last || b.loggedAt > last) last = b.loggedAt;
-  }
-  const days = last == null ? null : Math.floor((now - Date.parse(last)) / 86400000);
-  return { last, days, inactive: last == null || now - Date.parse(last) > INACTIVITY_DAYS * 86400000 };
-}
-const inactiveClinics = () => CLINICS.map((c) => ({ ...c, ...clinicActivity(c.code) })).filter((c) => c.inactive)
-  .sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity)); // never logged first, then the longest quiet
-
 function penaltyText(e) {
   return e.step === 'reclassified'
     ? t('penalty.reclassified', { from: catName(e.from), to: catName(e.to), pts: fmtPts(Math.abs(e.points)) })
@@ -2030,6 +1883,7 @@ $('clinicForm').addEventListener('submit', async (e) => {
   if (!category) return showMsg(msg, 'err', t('clinic.err.category'));
   if (w.blank) return showMsg(msg, 'err', t('clinic.err.weight'));
   if (w.invalid) return showMsg(msg, 'err', t('common.weightInvalid'));
+  if (w.tooHeavy) return showMsg(msg, 'err', t('common.weightTooHeavy', { max: MAX_BAG_KG }));
 
   let id;
   btn.disabled = true;
@@ -2783,6 +2637,7 @@ async function confirmPickup() {
   }
   if (w.blank) return showMsg(msg, 'err', t('collector.err.weightBlank'));
   if (w.invalid) return showMsg(msg, 'err', t('common.weightInvalid'));
+  if (w.tooHeavy) return showMsg(msg, 'err', t('common.weightTooHeavy', { max: MAX_BAG_KG }));
 
   const collectorId = $('collectorId').value.trim().toUpperCase() || null;
   try { localStorage.setItem(COLLECTOR_KEY, collectorId || ''); } catch (e) {}
@@ -2805,7 +2660,7 @@ async function confirmPickup() {
 
   const diff = weightDiff(bag);
   const note = penaltyNote(bag, before);
-  if (Math.abs(diff) > WEIGHT_TOLERANCE) {
+  if (overTolerance(diff)) {
     showMsg(msg, 'warn', t('collector.warnWeight', { id, pct: (diff * 100).toFixed(0), from: kg(bag.weight), to: kg(bag.collectorWeight) }) + note);
   } else {
     showMsg(msg, note ? 'warn' : 'ok', t('collector.ok', { id, clinic: clinicName(bag.clinic) }) + note);
@@ -3412,6 +3267,7 @@ $('facPanel').addEventListener('submit', async (e) => {
     const facility = $('facName').value.trim();
     if (w.blank) return showMsg(msg, 'err', t('facility.err.weightBlank'));
     if (w.invalid) return showMsg(msg, 'err', t('common.weightInvalid'));
+    if (w.tooHeavy) return showMsg(msg, 'err', t('common.weightTooHeavy', { max: MAX_BAG_KG }));
     if (!facility) return showMsg(msg, 'err', t('facility.err.name'));
     try { localStorage.setItem(FACILITY_KEY, facility); } catch (err) {}
     btn.disabled = true;
@@ -3821,6 +3677,16 @@ function openAbout() {
   $('aboutVer').textContent = t('about.version', { v: APP_VERSION, date });
   $('aboutModal').hidden = false;
   $('aboutClose').focus();
+  showHealth();
+}
+// Live status of the two services the app depends on, from the server function's "health" task
+async function showHealth() {
+  const el = $('aboutHealth');
+  const state = (x) => x && x.ok ? `${t('health.online')} (${x.ms} ms)` : t('health.offline');
+  el.textContent = t('health.checking');
+  let h = null;
+  try { h = await askAI({ task: 'health' }); } catch (e) { console.error(e); }
+  el.textContent = t('health.line', { ai: state(h && h.ai), db: cloud ? state(h && h.database) : t('health.demo') });
 }
 function closeAbout() { $('aboutModal').hidden = true; }
 $('aboutLogo').src = document.querySelector('.sidebar .brand-logo').src;
@@ -3880,7 +3746,7 @@ if (me) {
   setRole(VIEWS[role] ? role : myTabs[0]);
   // If the shared-data setup or its library didn't download, don't quietly fall back to
   // this-device-only demo mode: records saved there would never reach anyone else.
-  const cannotConnect = window.__cfgFailed || window.__libFailed || window.__i18nFailed || !I18N
+  const cannotConnect = window.__cfgFailed || window.__libFailed || window.__i18nFailed || window.__rulesFailed || !I18N
     || (CFG.supabaseUrl && !window.supabase);
   $('offlineRetry').addEventListener('click', () => (cannotConnect || !dataReady ? location.reload() : refresh()));
   if (cannotConnect) {

@@ -17,6 +17,7 @@
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
+const FUNCTION_VERSION = "2.1.3";
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -126,8 +127,8 @@ Deno.serve(async (req) => {
   }
   const task = body.task ?? "classify";
   if (task === "reset") return resetSamples(body, reply);
-
   const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+  if (task === "health") return reply(await health(apiKey));
   if (!apiKey) return reply({ error: "Set GEMINI_API_KEY" }, 503);
   // The language name goes into the prompt, so only plain names are accepted ("Hindi", "Odia (Oriya)")
   const lang = typeof body.lang === "string" && /^[A-Za-z][A-Za-z ()-]{1,39}$/.test(body.lang) ? body.lang : "English";
@@ -156,12 +157,33 @@ Deno.serve(async (req) => {
       const json = await askGemini(apiKey, [{ text: briefPrompt(lang, body.data) }], BRIEF_SCHEMA);
       return reply({ brief: cleanBrief(json) });
     }
-    return reply({ error: "task must be classify, voice, brief or reset" }, 400);
+    return reply({ error: "task must be classify, voice, brief, reset or health" }, 400);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);
     return reply({ error: "AI service error" }, 502);
   }
 });
+
+// Status for the About screen and pre-demo checks: can we reach Gemini and the database, and how fast.
+// Reads model metadata and one bag ID only, so it uses no generation quota and returns no data.
+async function health(apiKey: string | undefined) {
+  const timed = async (check: () => Promise<boolean>) => {
+    const t0 = Date.now();
+    const ok = await check().catch(() => false);
+    return { ok, ms: Date.now() - t0 };
+  };
+  const reachable = async (url: string, headers: Record<string, string>) => {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+    await res.body?.cancel();
+    return res.ok;
+  };
+  const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const [ai, database] = await Promise.all([
+    timed(async () => !!apiKey && await reachable(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}`, { "x-goog-api-key": apiKey })),
+    timed(async () => !!url && !!key && await reachable(`${url}/rest/v1/bags?select=id&limit=1`, { apikey: key, Authorization: `Bearer ${key}` })),
+  ]);
+  return { version: FUNCTION_VERSION, ai: { ...ai, model: GEMINI_MODELS[0] }, database };
+}
 
 // Admin "Reset Demo" on the shared database. Visitors have no delete rights (supabase-setup.sql), so the
 // only delete path is this one: it removes sample bags (no selection_method) and redemptions, nothing a

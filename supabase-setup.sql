@@ -94,3 +94,60 @@ begin
   alter publication supabase_realtime add table public.redemptions;
 exception when duplicate_object then null;
 end $$;
+
+-- DATA RULES THE DATABASE ENFORCES (2.1.3), whoever writes: the app, the raw API or a script.
+-- Safe to re-run. Tests: supabase/guard-test.sql (runs in a transaction that is always rolled back).
+--   * Bag IDs look like CL-HPC-02448 and carry the bag's own clinic code; events is always a list.
+--   * A bag's ID, clinic, logging time and logged weight never change.
+--   * Each handover is written once: collected / in transit / received / treated can't be changed or undone.
+--   * History only grows: every earlier event must still be there with the same step, time and weight.
+--   * New weights are at most 50 kg (bags already stored are left as they are).
+alter table public.bags drop constraint if exists bags_id_format;
+alter table public.bags add constraint bags_id_format check (id ~ '^CL-[A-Z]{3}-[0-9]{5}$' and substr(id, 4, 3) = clinic);
+alter table public.bags drop constraint if exists bags_events_array;
+alter table public.bags add constraint bags_events_array check (jsonb_typeof(events) = 'array');
+alter table public.redemptions drop constraint if exists redemptions_clinic_format;
+alter table public.redemptions add constraint redemptions_clinic_format check (clinic ~ '^[A-Z]{3}$');
+
+create or replace function public.bags_guard() returns trigger language plpgsql as $$
+declare
+  max_kg constant numeric := 50;
+begin
+  if tg_op = 'INSERT' then
+    if new.weight > max_kg then
+      raise exception 'A bag can weigh at most % kg', max_kg using errcode = '23514';
+    end if;
+    return new;
+  end if;
+  if new.id <> old.id or new.clinic <> old.clinic or new.logged_at <> old.logged_at or new.weight <> old.weight then
+    raise exception 'A bag''s ID, clinic, logging time and logged weight cannot change' using errcode = '23514';
+  end if;
+  if (old.status = 'collected' and new.status <> 'collected')
+     or (old.collected_at     is not null and new.collected_at     is distinct from old.collected_at)
+     or (old.collector_weight is not null and new.collector_weight is distinct from old.collector_weight)
+     or (old.in_transit_at    is not null and new.in_transit_at    is distinct from old.in_transit_at)
+     or (old.received_at      is not null and new.received_at      is distinct from old.received_at)
+     or (old.received_weight  is not null and new.received_weight  is distinct from old.received_weight)
+     or (old.treated_at       is not null and new.treated_at       is distinct from old.treated_at) then
+    raise exception 'A recorded handover cannot be changed or undone' using errcode = '23514';
+  end if;
+  if (new.collector_weight is distinct from old.collector_weight and new.collector_weight > max_kg)
+     or (new.received_weight is distinct from old.received_weight and new.received_weight > max_kg) then
+    raise exception 'A bag can weigh at most % kg', max_kg using errcode = '23514';
+  end if;
+  -- Compared by value, not order: sample data has fixed clock times, so a new event can sort before older ones
+  if exists (
+    select 1 from jsonb_array_elements(old.events) o
+    where not exists (
+      select 1 from jsonb_array_elements(new.events) n
+      where n->>'step' = o->>'step'
+        and (n->>'at')::timestamptz = (o->>'at')::timestamptz
+        and (n->>'weight')::numeric is not distinct from (o->>'weight')::numeric)) then
+    raise exception 'Bag history can only be added to' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists bags_guard on public.bags;
+create trigger bags_guard before insert or update on public.bags
+  for each row execute function public.bags_guard();
