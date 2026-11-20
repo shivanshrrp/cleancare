@@ -14,7 +14,7 @@ Tracks biomedical waste bags in small clinics, from the clinic to treatment.
 | Working product | Full chain of custody (log → collect → in transit → received → treated), QR labels and scanning, live sync across devices, five roles, web and Android | `index.html`, live links above |
 | Google AI (Gemini) | Three features through one server function: **photo check** (image → CPCB bag colour, confidence, safe-handling step), **voice check** (staff describe an item in any Indian language → transcript + colour), **AI daily brief** for the regulator. Grounded in Schedule I of the BMW Rules 2016; JSON output checked against a schema; low-confidence answers ask for a retry; falls back to a second model when the first is busy; replies in the user's language | `supabase/functions/classify-waste/index.ts` |
 | Google Cloud | Hosted on Firebase Hosting (project `cleancare-srrp`); Gemini API key from Google AI Studio; Google Noto fonts for all Indian scripts | `firebase.json`, `.firebaserc` |
-| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; visitors cannot delete data; 20 automated checks on the server function; translation checker | `test.ts`, `tools/check-translations.js`, `supabase-setup.sql` |
+| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; the database itself enforces the chain of custody (write-once handovers, history that only grows, ID and weight checks); visitors cannot delete data; live health check. **60 automated checks**: 22 on the rules, 22 on the server function, 16 on the database guards | `rules.js`, `tools/test-rules.js`, `test.ts`, `supabase/guard-test.sql` |
 | Accessibility and UX | English + all 22 Eighth Schedule languages (11 complete), right-to-left Urdu/Kashmiri/Sindhi, dark mode, WCAG AA contrast, 44 px tap targets, onboarding and demo mode | `translations.js`, `translations/` |
 | Problem fit | Built around the CPCB colour rules, the 24-hour CBWTF rule and the 10% weight check at every handover | *Chain of custody* below |
 
@@ -33,12 +33,13 @@ A single static page (`index.html`) with no build step. Data is shared in real t
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The whole app |
+| `index.html` | The app: screens, data access and translations wiring |
+| `rules.js` | The rules, kept apart from the screens: exceptions, the CPCB 24-hour rule, weight checks, reward points, leaderboard, inactive clinics. `deno run --allow-read tools/test-rules.js` checks them (22 checks, fixed clock) |
 | `translations.js`, `translations/` | All interface text: English, Hindi and Marathi inline, the other 20 languages as separate files. See *Languages* below |
 | `firebase.json`, `.firebaserc` | Firebase Hosting setup (what is published, and the project) |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
-| `supabase-setup.sql` | Creates the database tables (bags, redemptions). Run once; later additions are safe to re-run |
-| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It also runs the admin's **Reset Demo**, the only path that can delete rows (sample bags only). It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it (20 checks) with Gemini and the database stubbed: `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
+| `supabase-setup.sql` | Creates the database tables (bags, redemptions) and the rules the database enforces. Safe to re-run. `supabase/guard-test.sql` checks those rules in the SQL Editor (16 checks, always rolled back) |
+| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It also runs the admin's **Reset Demo**, the only path that can delete rows (sample bags only). It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it (22 checks) with Gemini and the database stubbed. Its `health` task reports whether Gemini and the database are reachable (shown on the About screen): `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
 
 ## 1. Set up the shared database (Supabase, free)
 
@@ -180,8 +181,10 @@ with the site link can still add or change bags in the database (not delete them
 
 ## Notes
 
-- **Security:** visitors can read, add and update bags but cannot delete anything; the Gemini key and the
-  database's service key stay on the server. **Reset Demo** (admin) replaces the sample bags for everyone but
+- **Security and integrity:** visitors can read, add and update bags but cannot delete anything; the Gemini key
+  and the database's service key stay on the server. Whoever writes (the app, the raw API or a script), the
+  database refuses: a changed bag ID, clinic, logging time or logged weight; editing or undoing a recorded
+  handover; removing or editing past history; IDs that don't match the clinic; new weights over 50 kg. **Reset Demo** (admin) replaces the sample bags for everyone but
   keeps every bag logged in the app. Before real clinic data: Supabase Auth plus per-role row-level security.
 - **Supabase free tier:** projects pause after about a week with no activity. Resume from the Supabase
   dashboard.
