@@ -526,6 +526,13 @@
   .intro-actions { display: flex; gap: 10px; }
   .intro-actions .btn { flex: 1; }
   .intro-skip { margin-top: 14px; font-size: 13px; }
+  a.btn { text-decoration: none; }
+  .about-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .about-head .brand-logo { width: 48px; height: 48px; }
+  .modal .about-ver { margin: 0; font-size: 12px; }
+  .modal.about p { margin-bottom: 10px; }
+  .modal.about .menu-list { margin-top: 14px; }
+  .auth-about { display: block; margin: 16px auto 0; font-size: 13px; }
   .auth-or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 18px 0 14px; }
   .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .demo-pick h2 { font-size: 15px; margin: 0 0 2px; }
@@ -680,6 +687,7 @@
         <button class="btn ghost" type="button" data-demo-role="admin"><span data-icon="dashboard"></span><span data-i18n="auth.role.admin">Municipal / Admin</span></button>
       </div>
     </div>
+    <button class="link-btn auth-about" type="button" id="authAbout" data-i18n="about.title">About CleanCare</button>
   </div>
 </div>
 <div class="app">
@@ -995,6 +1003,20 @@
     </div>
   </div>
 </div>
+<div class="modal-backdrop" id="aboutModal" hidden>
+  <div class="modal about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="about-head"><img class="brand-logo" id="aboutLogo" alt="">
+      <div><h2 id="aboutTitle" data-i18n="about.title">About CleanCare</h2><p class="about-ver" id="aboutVer"></p></div></div>
+    <p data-i18n="about.text">CleanCare tracks every biomedical waste bag from small clinics to treatment.</p>
+    <p data-i18n="about.privacy">No patient data is collected.</p>
+    <p data-i18n="about.team">Built by a student team at WeSchool.</p>
+    <div class="menu-list">
+      <a class="btn ghost" href="https://github.com/shivanshrrp/cleancare/releases/latest" target="_blank" rel="noopener"><span data-icon="download"></span><span data-i18n="about.android">Android app</span></a>
+      <a class="btn ghost" href="https://github.com/shivanshrrp/cleancare" target="_blank" rel="noopener"><span data-icon="link"></span><span data-i18n="about.source">Source code</span></a>
+    </div>
+    <div class="actions menu-close"><button class="btn ghost" type="button" id="aboutClose" data-i18n="assist.close">Close</button></div>
+  </div>
+</div>
 <div class="modal-backdrop" id="menuModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="menuName">
     <div class="menu-head"><span class="avatar" id="menuInit"></span><div><b id="menuName"></b><small id="menuRole"></small></div></div>
@@ -1007,6 +1029,7 @@
       </div>
     </fieldset>
     <div class="menu-list">
+      <button class="btn ghost" type="button" id="menuAbout"><span data-icon="info"></span><span data-i18n="about.title">About CleanCare</span></button>
       <button class="btn ghost" type="button" id="menuIntro"><span data-icon="help"></span><span data-i18n="menu.intro">How CleanCare works</span></button>
       <button class="btn ghost" type="button" id="menuReset"><span data-icon="reset"></span><span data-i18n="reset.button">Reset Demo</span></button>
       <button class="btn ghost" type="button" id="menuLogout"><span data-icon="logout"></span><span data-i18n="auth.logout">Log out</span></button>
@@ -1093,6 +1116,9 @@ function exitDemo() {
 }
 const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
+// Shown in About. Bump both with each release of the web app (the Android app has its own version).
+const APP_VERSION = '2.0.0';
+const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
 const VEHICLE_KEY = 'cleancare-vehicle-id';
@@ -1258,6 +1284,7 @@ const ICONS = {
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
   trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
@@ -3567,6 +3594,21 @@ $('introBack').addEventListener('click', () => { introStep--; renderIntro(); $('
 $('introSkip').addEventListener('click', closeIntro);
 $('menuIntro').addEventListener('click', () => { closeMenu(); openIntro(); });
 if (document.documentElement.dataset.intro) renderIntro();
+
+// ---------- about ----------
+function openAbout() {
+  const date = new Date(APP_UPDATED + 'T12:00:00').toLocaleDateString(dateLoc(), { day: 'numeric', month: 'short', year: 'numeric' });
+  $('aboutVer').textContent = t('about.version', { v: APP_VERSION, date });
+  $('aboutModal').hidden = false;
+  $('aboutClose').focus();
+}
+function closeAbout() { $('aboutModal').hidden = true; }
+$('aboutLogo').src = document.querySelector('.sidebar .brand-logo').src;
+$('menuAbout').addEventListener('click', () => { closeMenu(); openAbout(); });
+$('authAbout').addEventListener('click', openAbout);
+$('aboutClose').addEventListener('click', closeAbout);
+$('aboutModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeAbout(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('aboutModal').hidden) closeAbout(); });
 
 // ---------- demo ----------
 document.querySelectorAll('[data-demo-role]').forEach((b) => b.addEventListener('click', () => {

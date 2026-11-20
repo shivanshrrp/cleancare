@@ -538,6 +538,13 @@ window.CLEANCARE_I18N = {
     "intro.skip": "Skip",
     "intro.start": "Get started",
     "menu.intro": "How CleanCare works",
+    "about.title": "About CleanCare",
+    "about.version": "Version {v} · updated {date}",
+    "about.text": "CleanCare tracks every biomedical waste bag from small clinics to treatment, in line with the Bio-Medical Waste Management Rules, 2016.",
+    "about.privacy": "No patient data is collected: only bag IDs, colours, weights, times and staff or vehicle IDs.",
+    "about.team": "Built by a student team at WeSchool, mentored by Dr Chitralekha Kumar.",
+    "about.android": "Android app",
+    "about.source": "Source code",
     "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
@@ -1038,6 +1045,13 @@ window.CLEANCARE_I18N = {
     "intro.skip": "छोड़ें",
     "intro.start": "शुरू करें",
     "menu.intro": "CleanCare कैसे काम करता है",
+    "about.title": "CleanCare के बारे में",
+    "about.version": "संस्करण {v} · अपडेट {date}",
+    "about.text": "CleanCare बायोमेडिकल अपशिष्ट प्रबंधन नियम, 2016 के अनुसार छोटे क्लीनिकों से उपचार तक हर बायोमेडिकल कचरा बैग को ट्रैक करता है।",
+    "about.privacy": "किसी मरीज़ का डेटा नहीं लिया जाता: केवल बैग ID, रंग, वज़न, समय और स्टाफ या वाहन ID।",
+    "about.team": "WeSchool की एक छात्र टीम ने बनाया, मार्गदर्शक: डॉ. चित्रलेखा कुमार।",
+    "about.android": "Android ऐप",
+    "about.source": "सोर्स कोड",
     "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
@@ -1538,6 +1552,13 @@ window.CLEANCARE_I18N = {
     "intro.skip": "वगळा",
     "intro.start": "सुरू करा",
     "menu.intro": "CleanCare कसे काम करते",
+    "about.title": "CleanCare विषयी",
+    "about.version": "आवृत्ती {v} · अपडेट {date}",
+    "about.text": "CleanCare जैववैद्यकीय कचरा व्यवस्थापन नियम, 2016 नुसार लहान दवाखान्यांपासून प्रक्रियेपर्यंत प्रत्येक जैववैद्यकीय कचरा बॅग ट्रॅक करते.",
+    "about.privacy": "रुग्णाचा कोणताही डेटा घेतला जात नाही: फक्त बॅग ID, रंग, वजन, वेळ आणि कर्मचारी किंवा वाहन ID.",
+    "about.team": "WeSchool मधील विद्यार्थ्यांच्या टीमने बनवले, मार्गदर्शक: डॉ. चित्रलेखा कुमार.",
+    "about.android": "Android ॲप",
+    "about.source": "सोर्स कोड",
     "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };
