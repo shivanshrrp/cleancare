@@ -26,6 +26,11 @@ const first = calls.at(-1) as { contents: { parts: { text?: string }[] }[]; gene
 assert(first.contents[0].parts[1].text?.includes("in Hindi"), "classify: reply language goes into the prompt");
 assert(first.generationConfig.responseJsonSchema && first.generationConfig.responseMimeType === "application/json", "classify: JSON schema requested");
 
+// older app versions (no task) still get their one-line text
+script = [gemini({ item: "Needle", category: "None", confidence: 0.9, reason: "Paper", handling: "h" })];
+r = await post({ image: "aGVsbG8=", mediaType: "image/jpeg" });
+assert(r.json.text === "ITEM: Needle | CATEGORY: Not biomedical waste | REASON: Paper", "no task: legacy text line included");
+
 // a rejected schema retries once without it
 script = [{ status: 400, body: { error: { message: "Unknown name responseJsonSchema" } } }, gemini({ item: "Glove", category: "Red", confidence: 0.9, reason: "r", handling: "h" })];
 r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" });

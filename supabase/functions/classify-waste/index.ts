@@ -136,7 +136,13 @@ Deno.serve(async (req) => {
       if (!isBase64(body.image)) return reply({ error: "image must be base64 and under ~2 MB" }, 400);
       if (!IMAGE_TYPES.includes(body.mediaType as string)) return reply({ error: `mediaType must be one of ${IMAGE_TYPES.join(", ")}` }, 400);
       const json = await askGemini(apiKey, [{ inline_data: { mime_type: body.mediaType, data: body.image } }, { text: classifyPrompt(lang) }], RESULT_SCHEMA);
-      return reply({ result: cleanResult(json) });
+      const result = cleanResult(json);
+      // App versions before 2.1 send no task and read a single "ITEM | CATEGORY | REASON" line
+      if (!body.task) {
+        const cat = result.category === "None" ? "Not biomedical waste" : result.category;
+        return reply({ result, text: `ITEM: ${result.item} | CATEGORY: ${cat} | REASON: ${result.reason}` });
+      }
+      return reply({ result });
     }
     if (task === "voice") {
       if (!isBase64(body.audio)) return reply({ error: "audio must be base64 WAV and under ~2 MB" }, 400);
