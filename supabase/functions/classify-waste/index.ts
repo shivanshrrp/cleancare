@@ -18,7 +18,7 @@
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
-const FUNCTION_VERSION = "2.2.0";
+const FUNCTION_VERSION = "2.2.1";
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -249,11 +249,14 @@ function cleanBrief(b: Record<string, unknown>) {
 // Gemini is reached two ways, tried in order. Vertex AI (Google Cloud, billed to the project's Cloud credits; requests
 // aren't used for training) comes first when VERTEX_API_KEY is set; the Gemini API key from AI Studio is the fallback,
 // so a Vertex problem never takes the AI features down. Both take the same request body.
-type Provider = { name: string; key: string; url: (model: string, method: string) => string };
+// Vertex gets a time limit: on a new project it serves Gemini from a shared pool, and image calls were seen taking
+// 1.5 to 55 s. Past the limit the request is dropped and the Gemini API key answers instead (photos there: 2.6-5 s).
+type Provider = { name: string; key: string; url: (model: string, method: string) => string; timeoutMs?: number };
 function aiProviders(): Provider[] {
   const vertex = Deno.env.get("VERTEX_API_KEY")?.trim(), gemini = Deno.env.get("GEMINI_API_KEY")?.trim();
   const list: Provider[] = [];
-  if (vertex) list.push({ name: "Vertex AI", key: vertex, url: (m, fn) => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:${fn}` });
+  const timeoutMs = Number(Deno.env.get("VERTEX_TIMEOUT_MS")) || 8000;
+  if (vertex) list.push({ name: "Vertex AI", key: vertex, timeoutMs, url: (m, fn) => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:${fn}` });
   if (gemini) list.push({ name: "Gemini API", key: gemini, url: (m, fn) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:${fn}` });
   return list;
 }
@@ -273,11 +276,14 @@ async function askGemini(providers: Provider[], parts: unknown[], schema: unknow
 
 async function askVia(p: Provider, parts: unknown[], schema: unknown): Promise<Record<string, unknown>> {
   let lastError = "";
+  // One deadline for everything tried on this service (retries and models included)
+  const signal = p.timeoutMs ? AbortSignal.timeout(p.timeoutMs) : undefined;
   for (const model of GEMINI_MODELS) {
     for (const withSchema of [true, false]) {
       const started = Date.now();
       const res = await fetch(p.url(model, "generateContent"), {
         method: "POST",
+        signal,
         headers: { "x-goog-api-key": p.key, "content-type": "application/json" },
         body: JSON.stringify({
           contents: [{ role: "user", parts }],

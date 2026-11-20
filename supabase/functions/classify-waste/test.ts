@@ -6,7 +6,7 @@ let dbStatus = 200;
 let geminiUp = true, vertexUp = true;
 Deno.env.set("SUPABASE_URL", "https://db.test");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "service");
-let script: Array<{ status: number; body: unknown }> = [];
+let script: Array<{ status: number; body: unknown; delay?: number }> = [];
 const realFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
@@ -20,7 +20,13 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     return new Response("{}", { status: up ? 200 : 403 });
   }
   calls.push({ url, ...JSON.parse(String(init?.body)) });
-  const next = script.shift() ?? { status: 500, body: {} };
+  const next: { status: number; body: unknown; delay?: number } = script.shift() ?? { status: 500, body: {} };
+  if (next.delay) { // a slow service: waits, unless the caller gives up first
+    await new Promise((done, fail) => {
+      const t = setTimeout(done, next.delay);
+      init?.signal?.addEventListener("abort", () => { clearTimeout(t); fail(init.signal!.reason); });
+    });
+  }
   return new Response(JSON.stringify(next.body), { status: next.status });
 }) as typeof fetch;
 const gemini = (obj: unknown) => ({ status: 200, body: { candidates: [{ content: { parts: [{ text: JSON.stringify(obj) }] } }] } });
@@ -99,6 +105,15 @@ r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" })
 assert(r.status === 200 && String(calls.at(-1)!.url).includes("generativelanguage") && String(calls.at(-2)!.url).includes("aiplatform"), "vertex: failure falls back to the Gemini API key");
 script = [{ status: 403, body: {} }, { status: 403, body: {} }];
 assert((await post({ task: "brief", data: { a: 1 } })).status === 502, "vertex: both services down is reported, not hidden");
+Deno.env.set("VERTEX_TIMEOUT_MS", "300");
+script = [{ ...gemini({ item: "Glove", category: "Red", confidence: 0.9, reason: "r", handling: "h" }), delay: 2000 },
+  gemini({ item: "Glove", category: "Yellow", confidence: 0.9, reason: "r", handling: "h" })];
+const t0 = Date.now();
+r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" });
+assert(r.json.result.category === "Yellow" && Date.now() - t0 < 1500 && String(calls.at(-1)!.url).includes("generativelanguage"), "vertex: too slow is dropped and the Gemini API key answers");
+script = [{ ...gemini({ item: "Glove", category: "Red", confidence: 0.9, reason: "r", handling: "h" }), delay: 50 }];
+r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" });
+assert(r.json.result.category === "Red" && String(calls.at(-1)!.url).includes("aiplatform"), "vertex: a reply inside the limit is used");
 geminiUp = true; vertexUp = false; dbStatus = 200;
 r = await post({ task: "health" });
 assert(r.json.ai.ok && r.json.ai.via === "Gemini API" && r.json.services.length === 2 && !r.json.services[0].ok, "health: shows Vertex down and the fallback answering");
