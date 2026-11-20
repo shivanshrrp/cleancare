@@ -18,7 +18,7 @@
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
-const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "http://localhost:8765"];
+const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BASE64_CHARS = 3_000_000; // ~2.2 MB; the app sends ~100-300 KB photos and ~250 KB voice clips
 const MAX_BRIEF_CHARS = 20_000;

@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      ".git/**",
+      ".firebase/**",
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "supabase/**",
+      "tools/**",
+      "*.md",
+      "*.sql"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}
