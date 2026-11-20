@@ -1,5 +1,7 @@
 # CleanCare Waste Tracker
 
+[![Checks](https://github.com/shivanshrrp/cleancare/actions/workflows/checks.yml/badge.svg)](https://github.com/shivanshrrp/cleancare/actions/workflows/checks.yml)
+
 Tracks biomedical waste bags in small clinics, from the clinic to treatment.
 
 - **Live (Google Firebase Hosting):** https://cleancare-srrp.web.app
@@ -7,14 +9,44 @@ Tracks biomedical waste bags in small clinics, from the clinic to treatment.
 - Android app: https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk
 - No account needed: **Try demo** on the sign-in screen, or sign in with a test account (see *Sign-in*).
 
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Devices
+    W["Web app<br/>index.html + rules.js<br/>23 languages"]
+    A["Android app<br/>(WebView of the same site)"]
+  end
+  FH["Firebase Hosting<br/>Google Cloud"]
+  subgraph Supabase
+    DB[("Postgres<br/>bags · redemptions<br/>guards: write-once handovers,<br/>history only grows")]
+    RT["Realtime"]
+    FN["Edge function<br/>classify-waste"]
+  end
+  VX["Gemini on Vertex AI<br/>Google Cloud (8 s limit)"]
+  GA["Gemini API<br/>AI Studio key (fallback)"]
+
+  W -- "served by" --> FH
+  A -- "loads" --> FH
+  W -- "read / add / update<br/>(no deletes)" --> DB
+  DB -- "changes" --> RT -- "live updates" --> W
+  W -- "photo · voice · daily brief · health" --> FN
+  FN -- "first" --> VX
+  FN -. "if slow or down" .-> GA
+  FN -- "admin reset (service role)" --> DB
+```
+
+The browser never holds an AI key or the database's service key; both stay in the edge function. Every rule that
+protects a bag's history is enforced by the database itself, so it holds whoever writes (the app, the raw API or a script).
+
 ## Where to find each piece
 
 | Area | What is built | Where |
 | --- | --- | --- |
 | Working product | Full chain of custody (log → collect → in transit → received → treated), QR labels and scanning, live sync across devices, five roles, web and Android | `index.html`, live links above |
-| Google AI (Gemini) | Three features through one server function: **photo check** (image → CPCB bag colour, confidence, safe-handling step), **voice check** (staff describe an item in any Indian language → transcript + colour), **AI daily brief** for the regulator. Grounded in Schedule I of the BMW Rules 2016; JSON output checked against a schema; low-confidence answers ask for a retry; falls back to a second model when the first is busy; replies in the user's language | `supabase/functions/classify-waste/index.ts` |
-| Google Cloud | Hosted on Firebase Hosting (project `cleancare-srrp`); Gemini API key from Google AI Studio; Google Noto fonts for all Indian scripts | `firebase.json`, `.firebaserc` |
-| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; the database itself enforces the chain of custody (write-once handovers, history that only grows, ID and weight checks); visitors cannot delete data; live health check. **60 automated checks**: 22 on the rules, 22 on the server function, 16 on the database guards | `rules.js`, `tools/test-rules.js`, `test.ts`, `supabase/guard-test.sql` |
+| Google AI (Gemini) | Three features through one server function: **photo check** (image → CPCB bag colour, confidence, safe-handling step), **voice check** (staff describe an item in any Indian language → transcript + colour), **AI daily brief** for the regulator. Grounded in Schedule I of the BMW Rules 2016; JSON output checked against a schema; low-confidence answers ask for a retry; runs on **Vertex AI** first and falls back to the Gemini API key if Vertex is slow (8 s) or down, and to a second model when the first is busy; replies in the user's language. **Measured: 20 of 20 correct, median 1.6 s** on spoken items in Hindi, English and Tamil ([docs/ai-eval.md](docs/ai-eval.md)) | `supabase/functions/classify-waste/index.ts`, `tools/eval-voice.py` |
+| Google Cloud | Hosted on Firebase Hosting and Gemini served by Vertex AI, both in project `cleancare-srrp`; Gemini API key from Google AI Studio as the fallback; Google Noto fonts for all Indian scripts | `firebase.json`, `.firebaserc` |
+| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; the database itself enforces the chain of custody (write-once handovers, history that only grows, ID and weight checks); visitors cannot delete data; live health check (About screen). **66 automated checks, run by GitHub Actions on every push**: 22 on the rules, 28 on the server function, 16 on the database guards (on a real Postgres), plus the translation checker | `rules.js`, `tools/test-rules.js`, `test.ts`, `supabase/guard-test.sql`, `.github/workflows/checks.yml` |
 | Accessibility and UX | English + all 22 Eighth Schedule languages (11 complete), right-to-left Urdu/Kashmiri/Sindhi, dark mode, WCAG AA contrast, 44 px tap targets, onboarding and demo mode | `translations.js`, `translations/` |
 | Problem fit | Built around the CPCB colour rules, the 24-hour CBWTF rule and the 10% weight check at every handover | *Chain of custody* below |
 
@@ -39,7 +71,7 @@ A single static page (`index.html`) with no build step. Data is shared in real t
 | `firebase.json`, `.firebaserc` | Firebase Hosting setup (what is published, and the project) |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database tables (bags, redemptions) and the rules the database enforces. Safe to re-run. `supabase/guard-test.sql` checks those rules in the SQL Editor (16 checks, always rolled back) |
-| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It also runs the admin's **Reset Demo**, the only path that can delete rows (sample bags only). It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it (22 checks) with Gemini and the database stubbed. Its `health` task reports whether Gemini and the database are reachable (shown on the About screen): `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
+| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It also runs the admin's **Reset Demo**, the only path that can delete rows (sample bags only). It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. Set `VERTEX_API_KEY` (Google Cloud, Vertex AI) to have it answer first; `GEMINI_API_KEY` is the fallback, and one of the two is enough. `test.ts` checks it (28 checks) with Gemini and the database stubbed. Its `health` task reports whether Gemini and the database are reachable (shown on the About screen): `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
 
 ## 1. Set up the shared database (Supabase, free)
 
