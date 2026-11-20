@@ -1186,7 +1186,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.1.1';
+const APP_VERSION = '2.1.2';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -1552,23 +1552,13 @@ async function startCloud() {
 }
 
 async function cloudReset() {
-  // Only sample bags are replaced. Bags logged in the app always have a selection method, so they survive a reset.
-  const del = await cloud.from('bags').delete().is('selection_method', null);
-  if (del.error) throw del.error;
-  const kept = db.bags.filter((b) => b.selectionMethod);
-  const keptIds = new Set(kept.map((b) => b.id));
+  // Visitors can't delete rows, so the server function does the reset. It replaces only sample bags:
+  // bags logged in the app always have a selection method and survive (same IDs are skipped, not overwritten).
   const fresh = seed();
-  fresh.bags = fresh.bags.filter((b) => !keptIds.has(b.id));
-  const ins = await cloud.from('bags').insert(fresh.bags.map(toRow));
-  if (ins.error) throw ins.error;
-  db.bags = kept.concat(fresh.bags);
-  // Redemptions reset with the bags, so balances stay consistent
-  const delR = await cloud.from('redemptions').delete().neq('clinic', '');
-  if (delR.error) throw delR.error;
-  const insR = await cloud.from('redemptions').insert(fresh.redemptions.map((r) =>
-    ({ clinic: r.clinic, item: r.item, points: r.points, requested_at: r.requestedAt, status: r.status }))).select();
-  if (insR.error) throw insR.error;
-  db.redemptions = insR.data.map(fromRedemption);
+  const res = await askAI({ task: 'reset', bags: fresh.bags.map(toRow), redemptions: fresh.redemptions.map((r) =>
+    ({ clinic: r.clinic, item: r.item, points: r.points, requested_at: r.requestedAt, status: r.status })) });
+  [db.bags, db.redemptions] = await Promise.all([fetchBags(), fetchRedemptions()]);
+  return res;
 }
 
 async function addBag(bag) {

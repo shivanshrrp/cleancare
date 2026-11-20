@@ -11,8 +11,10 @@ create table if not exists public.bags (
   collected_at     timestamptz
 );
 
--- DEMO ACCESS: anyone with the site link can read, add, update and delete bags.
--- Fine for a demo; add real sign-in before using this with live clinic data.
+-- DEMO ACCESS: anyone with the site link can read, add and update bags, but not delete them.
+-- The admin's "Reset Demo" deletes through the classify-waste edge function (service role), and only sample bags.
+-- Before real clinic data: Supabase Auth plus per-role policies (clinic writes its own bags, collector/facility
+-- only their step).
 alter table public.bags enable row level security;
 
 drop policy if exists "demo read"   on public.bags;
@@ -23,7 +25,6 @@ drop policy if exists "demo delete" on public.bags;
 create policy "demo read"   on public.bags for select to anon using (true);
 create policy "demo insert" on public.bags for insert to anon with check (true);
 create policy "demo update" on public.bags for update to anon using (true) with check (true);
-create policy "demo delete" on public.bags for delete to anon using (true);
 
 -- Push changes to open pages instantly (realtime)
 do $$
@@ -78,7 +79,7 @@ create table if not exists public.redemptions (
   status       text not null default 'Requested'
 );
 
--- DEMO ACCESS, same as bags: anyone with the site link can read and add redemptions.
+-- DEMO ACCESS, same as bags: anyone with the site link can read, add and update redemptions; no deletes.
 alter table public.redemptions enable row level security;
 drop policy if exists "demo read"   on public.redemptions;
 drop policy if exists "demo insert" on public.redemptions;
@@ -87,7 +88,6 @@ drop policy if exists "demo delete" on public.redemptions;
 create policy "demo read"   on public.redemptions for select to anon using (true);
 create policy "demo insert" on public.redemptions for insert to anon with check (true);
 create policy "demo update" on public.redemptions for update to anon using (true) with check (true);
-create policy "demo delete" on public.redemptions for delete to anon using (true);
 
 do $$
 begin

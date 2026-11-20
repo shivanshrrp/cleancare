@@ -1,7 +1,22 @@
 # CleanCare Waste Tracker
 
-Tracks biomedical waste bags in small clinics, from the clinic to treatment. Live at
-https://shivanshrrp.github.io/cleancare/
+Tracks biomedical waste bags in small clinics, from the clinic to treatment.
+
+- **Live (Google Firebase Hosting):** https://cleancare-srrp.web.app
+- Mirror (GitHub Pages): https://shivanshrrp.github.io/cleancare/
+- Android app: https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk
+- No account needed: **Try demo** on the sign-in screen, or sign in with a test account (see *Sign-in*).
+
+## Where to find each piece
+
+| Area | What is built | Where |
+| --- | --- | --- |
+| Working product | Full chain of custody (log → collect → in transit → received → treated), QR labels and scanning, live sync across devices, five roles, web and Android | `index.html`, live links above |
+| Google AI (Gemini) | Three features through one server function: **photo check** (image → CPCB bag colour, confidence, safe-handling step), **voice check** (staff describe an item in any Indian language → transcript + colour), **AI daily brief** for the regulator. Grounded in Schedule I of the BMW Rules 2016; JSON output checked against a schema; low-confidence answers ask for a retry; falls back to a second model when the first is busy; replies in the user's language | `supabase/functions/classify-waste/index.ts` |
+| Google Cloud | Hosted on Firebase Hosting (project `cleancare-srrp`); Gemini API key from Google AI Studio; Google Noto fonts for all Indian scripts | `firebase.json`, `.firebaserc` |
+| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; visitors cannot delete data; 20 automated checks on the server function; translation checker | `test.ts`, `tools/check-translations.js`, `supabase-setup.sql` |
+| Accessibility and UX | English + all 22 Eighth Schedule languages (11 complete), right-to-left Urdu/Kashmiri/Sindhi, dark mode, WCAG AA contrast, 44 px tap targets, onboarding and demo mode | `translations.js`, `translations/` |
+| Problem fit | Built around the CPCB colour rules, the 24-hour CBWTF rule and the 10% weight check at every handover | *Chain of custody* below |
 
 | Role | What it does |
 | --- | --- |
@@ -13,7 +28,6 @@ https://shivanshrrp.github.io/cleancare/
 | **Track** | A parcel-style timeline for any bag, showing the date and time of every checkpoint; links like `?track=CL-ABC-00231` open it directly |
 
 A single static page (`index.html`) with no build step. Data is shared in real time through Supabase.
-There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/latest/download/CleanCare.apk
 
 ## Files
 
@@ -21,9 +35,10 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 | --- | --- |
 | `index.html` | The whole app |
 | `translations.js`, `translations/` | All interface text: English, Hindi and Marathi inline, the other 20 languages as separate files. See *Languages* below |
+| `firebase.json`, `.firebaserc` | Firebase Hosting setup (what is published, and the project) |
 | `config.js` | Your Supabase URL and key. Leave blank for demo mode, where each browser keeps its own data |
 | `supabase-setup.sql` | Creates the database tables (bags, redemptions). Run once; later additions are safe to re-run |
-| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it with Gemini stubbed: `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
+| `supabase/functions/classify-waste/` | Server function for every Google Gemini feature: the photo check, the voice check and the Monitor's AI daily brief. It also runs the admin's **Reset Demo**, the only path that can delete rows (sample bags only). It grounds Gemini in the BMW Rules 2016 colour coding, asks for JSON that matches a schema, checks the reply, and falls back to a second model when the first is busy. Needs the `GEMINI_API_KEY` secret (from Google AI Studio) in Supabase → Edge Functions → Secrets. `test.ts` checks it (20 checks) with Gemini and the database stubbed: `GEMINI_API_KEY=test deno run --allow-net --allow-env supabase/functions/classify-waste/test.ts` |
 
 ## 1. Set up the shared database (Supabase, free)
 
@@ -36,7 +51,18 @@ There's also an Android app: https://github.com/shivanshrrp/cleancare/releases/l
 
 The first time the site opens, it loads sample bags from 10 clinics into the database. **Reset Demo** reloads them.
 
-## 2. Put it live on GitHub Pages
+## 2. Put it live
+
+**Firebase Hosting (Google Cloud):** nothing to install, run from this folder
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only hosting
+```
+`firebase.json` publishes only the app files (not `.git`, `supabase/` or `tools/`). Add the new site address to
+`ALLOWED_ORIGINS` in the server function, or the Gemini features are refused there.
+
+**GitHub Pages (mirror):**
+
 
 1. Create a new **public** repository on GitHub, e.g. `cleancare`. Don't add a README.
 2. Push this folder:
@@ -101,7 +127,7 @@ right-to-left. Fonts come from Google's Noto families, and a browser only downlo
 
 | Quality | Languages |
 |---|---|
-| **Complete, 438 of 438 strings** | English, हिन्दी Hindi, मराठी Marathi, বাংলা Bengali, தமிழ் Tamil, తెలుగు Telugu, ગુજરાતી Gujarati, ಕನ್ನಡ Kannada, മലയാളം Malayalam, ਪੰਜਾਬੀ Punjabi, اردو Urdu |
+| **Complete, 508 of 508 strings** | English, हिन्दी Hindi, मराठी Marathi, বাংলা Bengali, தமிழ் Tamil, తెలుగు Telugu, ગુજરાતી Gujarati, ಕನ್ನಡ Kannada, മലയാളം Malayalam, ਪੰਜਾਬੀ Punjabi, اردو Urdu |
 | **Core screens, about 220 strings. Best effort, needs native review** | नेपाली Nepali, संस्कृतम् Sanskrit, मैथिली Maithili, डोगरी Dogri, कोंकणी Konkani, অসমীয়া Assamese, ଓଡ଼ିଆ Odia, سنڌي Sindhi |
 | **Partial, 40 to 140 strings. Best effort, needs native review** | बर' Bodo, کٲشُر Kashmiri, ꯃꯩꯇꯩꯂꯣꯟ Manipuri (Meitei Mayek), ᱥᱟᱱᱛᱟᱲᱤ Santali (Ol Chiki) |
 
@@ -148,14 +174,15 @@ database; a banner and a "Demo" badge stay on screen, **Reset Demo** reloads the
 them. (The AI photo check still calls the AI service, which stores nothing.)
 
 **This is a mock sign-in, not security.** Accounts live in `index.html` with their passwords stored only as SHA-256
-hashes, and the session keeps just the user and a random token. It decides which screens each role sees, but the
-database itself is still open to anyone with the site link. Before using CleanCare with real clinic data, replace
+hashes, and the session keeps just the user and a random token. It decides which screens each role sees, but anyone
+with the site link can still add or change bags in the database (not delete them). Before using CleanCare with real clinic data, replace
 `authService` with Supabase Auth (it has the same `signIn` shape) and add row-level security per role.
 
 ## Notes
 
-- **Security:** the demo database lets anyone who has the site link add, change or delete bags, and
-  **Reset Demo** wipes the data for everyone. Add Supabase Auth before using it with real clinic data.
+- **Security:** visitors can read, add and update bags but cannot delete anything; the Gemini key and the
+  database's service key stay on the server. **Reset Demo** (admin) replaces the sample bags for everyone but
+  keeps every bag logged in the app. Before real clinic data: Supabase Auth plus per-role row-level security.
 - **Supabase free tier:** projects pause after about a week with no activity. Resume from the Supabase
   dashboard.
 - **Local testing:** run `python3 -m http.server 8765` in this folder and open http://localhost:8765.

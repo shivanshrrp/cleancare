@@ -118,9 +118,6 @@ Deno.serve(async (req) => {
   hits.push(now);
   recent.set(ip, hits);
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
-  if (!apiKey) return reply({ error: "Set GEMINI_API_KEY" }, 503);
-
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -128,6 +125,10 @@ Deno.serve(async (req) => {
     return reply({ error: "Body must be JSON" }, 400);
   }
   const task = body.task ?? "classify";
+  if (task === "reset") return resetSamples(body, reply);
+
+  const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+  if (!apiKey) return reply({ error: "Set GEMINI_API_KEY" }, 503);
   // The language name goes into the prompt, so only plain names are accepted ("Hindi", "Odia (Oriya)")
   const lang = typeof body.lang === "string" && /^[A-Za-z][A-Za-z ()-]{1,39}$/.test(body.lang) ? body.lang : "English";
 
@@ -155,12 +156,45 @@ Deno.serve(async (req) => {
       const json = await askGemini(apiKey, [{ text: briefPrompt(lang, body.data) }], BRIEF_SCHEMA);
       return reply({ brief: cleanBrief(json) });
     }
-    return reply({ error: "task must be classify, voice or brief" }, 400);
+    return reply({ error: "task must be classify, voice, brief or reset" }, 400);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);
     return reply({ error: "AI service error" }, 502);
   }
 });
+
+// Admin "Reset Demo" on the shared database. Visitors have no delete rights (supabase-setup.sql), so the
+// only delete path is this one: it removes sample bags (no selection_method) and redemptions, nothing a
+// clinic logged in the app. ponytail: anyone can still trigger it; real admin checks need Supabase Auth.
+async function resetSamples(body: Record<string, unknown>, reply: (b: unknown, s?: number) => Response) {
+  const okRows = (a: unknown, max: number) => Array.isArray(a) && a.length <= max && a.every((r) => r && typeof r === "object" && !Array.isArray(r));
+  if (!okRows(body.bags, 300) || !okRows(body.redemptions, 100)) return reply({ error: "bags and redemptions must be arrays of rows" }, 400);
+  if ((body.bags as Record<string, unknown>[]).some((b) => typeof b.id !== "string" || !/^[A-Z0-9-]{3,40}$/.test(b.id) || b.selection_method != null)) {
+    return reply({ error: "reset may only insert sample bags" }, 400);
+  }
+  const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return reply({ error: "Database not configured" }, 503);
+  const db = (path: string, method: string, rows?: unknown, prefer = "return=minimal") =>
+    fetch(`${url}/rest/v1/${path}`, { method, body: rows ? JSON.stringify(rows) : undefined,
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: prefer } });
+  const steps: [string, string, unknown?, string?][] = [
+    ["bags?selection_method=is.null", "DELETE"],
+    // Bags with the same ID as one logged in the app are skipped, so app data always survives
+    ["bags", "POST", body.bags, "return=minimal,resolution=ignore-duplicates"],
+    ["redemptions?clinic=neq.", "DELETE"],
+    ["redemptions", "POST", body.redemptions, "return=representation"],
+  ];
+  let res: Response | undefined;
+  for (const [path, method, rows, prefer] of steps) {
+    if (rows && !(rows as unknown[]).length) continue;
+    res = await db(path, method, rows, prefer);
+    if (!res.ok) {
+      console.error(path, method, res.status, await res.text());
+      return reply({ error: "Reset failed" }, 502);
+    }
+  }
+  return reply({ redemptions: res && body.redemptions && (body.redemptions as unknown[]).length ? await res.json() : [] });
+}
 
 // Only well-formed fields reach the app: known category, confidence clamped to 0-1, short strings
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
