@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
-<script src="translations.js?v=2.1.0" onerror="window.__i18nFailed = true"></script>
+<script src="translations.js?v=2.1.1" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -25,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js?v=2.1.0" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.1.1" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -46,7 +46,10 @@
   (function () {
     var seen = null;
     try { seen = localStorage.getItem('cleancare-intro-seen'); } catch (e) {}
-    if (!seen && document.documentElement.dataset.auth === 'out') document.documentElement.dataset.intro = 'show';
+    if (!seen && document.documentElement.dataset.auth === 'out') {
+      document.documentElement.dataset.intro = 'show';
+      document.documentElement.dataset.splash = '1';
+    }
   })();
 </script>
 <style>
@@ -102,8 +105,8 @@
   .sidebar { width: var(--sidebar-width); background: var(--white); border-inline-end: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; flex: none; }
   .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px; border-bottom: 1px solid var(--border); }
   .brand-logo { width: 52px; height: 52px; flex: none; object-fit: contain; }
-  .brand-txt { flex: 1; min-width: 0; }
-  .wordmark { display: block; font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+  .brand-txt { flex: 1; min-width: 0; overflow: hidden; }
+  .wordmark { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
   .wordmark span:first-child { color: var(--brand-dark); }
   .wordmark span:last-child { color: var(--brand-green); }
   .brand small { display: block; color: var(--brand-dark); opacity: .8; font-size: 12px; font-weight: 500; margin-top: 3px; }
@@ -515,7 +518,23 @@
   .intro { display: none; }
   html[data-intro="show"] .intro { display: grid; min-height: 100vh; place-items: center; padding: 76px 16px 24px; position: relative; }
   html[data-intro="show"] .auth, html[data-intro="show"] .app { display: none; }
-  .intro-card { width: 100%; max-width: 400px; text-align: center; }
+  .intro-card { width: 100%; max-width: 400px; text-align: center; animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; }
+  html[data-splash] .intro-card { animation-delay: 1.35s; } /* after the splash */
+  .intro-step.anim { animation: rise .35s cubic-bezier(.2, .8, .2, 1) both; }
+  .intro-step.anim .intro-icon { animation: pop .5s cubic-bezier(.2, .9, .3, 1.25) both; }
+  .splash { display: none; }
+  html[data-splash] .splash { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 6px;
+    background: var(--background); animation: splash-out .4s ease 1.2s forwards; pointer-events: none; }
+  .splash .brand-logo { width: 96px; height: 96px; margin-bottom: 10px; animation: pop .7s cubic-bezier(.2, .9, .3, 1.25) both; }
+  .splash .wordmark { font-size: 34px; animation: rise .5s ease-out .3s both; }
+  .splash small { color: var(--brand-dark); font-size: 14px; font-weight: 500; animation: rise .5s ease-out .5s both; }
+  @keyframes pop { from { opacity: 0; transform: scale(.5); } 60% { opacity: 1; transform: scale(1.08); } to { transform: scale(1); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) {
+    html[data-splash] .splash { display: none; }
+    .intro-card, html[data-splash] .intro-card, .intro-step.anim, .intro-step.anim .intro-icon { animation: none; }
+  }
   .intro-card .brand-logo { display: block; margin: 0 auto 14px; }
   .intro-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--green-soft); color: var(--green-ink); display: grid; place-items: center; margin: 0 auto 14px; }
   .intro-icon svg.i { width: 30px; height: 30px; }
@@ -623,9 +642,16 @@
     .stack { margin-bottom: 16px; }
     .tbl-wrap { margin: 0 -16px -16px; }
   }
+  @media (max-width: 359px) {
+    .theme-btn.mobile-only { display: none !important; } /* still in the account menu */
+  }
   @media (max-width: 600px) {
+    /* room for the language, theme and account buttons: tagline hidden, language button shows just the globe */
     .sidebar .brand small { display: none; }
-    .demo-banner { padding: 8px 16px; } /* room for the language, theme and account buttons */
+    .lang-btn.mobile-only { max-width: none; padding: 0; width: 44px; justify-content: center; }
+    .lang-btn.mobile-only .lang-cur { display: none; }
+    .lang-btn.mobile-only svg.i { width: 20px; height: 20px; }
+    .demo-banner { padding: 8px 16px; }
     .stats { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .rw-top { grid-template-columns: 1fr; gap: 10px; }
     .fund-grid { gap: 10px; }
@@ -674,9 +700,11 @@
   </div>
   <div class="card intro-card">
     <img class="brand-logo" id="introLogo" alt="">
-    <div class="intro-icon" id="introIcon"></div>
-    <h1 id="introTitle"></h1>
-    <p id="introText"></p>
+    <div class="intro-step" id="introStep">
+      <div class="intro-icon" id="introIcon"></div>
+      <h1 id="introTitle"></h1>
+      <p id="introText"></p>
+    </div>
     <div class="intro-dots" id="introDots" aria-hidden="true"></div>
     <div class="intro-actions">
       <button class="btn ghost" type="button" id="introBack" data-i18n="intro.back">Back</button>
@@ -1003,6 +1031,13 @@
   </div>
 </div>
 
+<!-- First open only: the brand animates in, then fades to the introduction -->
+<div class="splash" id="splash" aria-hidden="true">
+  <img class="brand-logo" id="splashLogo" alt="">
+  <b class="wordmark"><span>Clean</span><span>Care</span></b>
+  <small data-i18n="app.tagline">From Segregation to Safe Disposal</small>
+</div>
+<script>document.getElementById('splashLogo').src = document.querySelector('.sidebar .brand-logo').src;</script>
 <div class="lang-pop" id="langPop" role="dialog" aria-label="Language" data-i18n-aria="lang.label" hidden>
   <input type="search" id="langSearch" placeholder="Search languages" data-i18n-ph="lang.search" autocomplete="off">
   <div class="lang-list" id="langList" role="listbox"></div>
@@ -1151,7 +1186,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.1.1';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -3762,6 +3797,10 @@ function renderIntro() {
   setText($('introText'), `intro.${n}.d`);
   $('introDots').innerHTML = INTRO_ICONS.map((_, i) => `<i${i === introStep ? ' class="on"' : ''}></i>`).join('');
   $('introBack').hidden = introStep === 0;
+  const step = $('introStep'); // replay the step's entrance
+  step.classList.remove('anim');
+  void step.offsetWidth;
+  step.classList.add('anim');
   setText($('introNext').firstElementChild, n === INTRO_ICONS.length ? 'intro.start' : 'intro.next');
 }
 function openIntro() {
