@@ -3,7 +3,7 @@
 const calls: Record<string, unknown>[] = [];
 const dbCalls: string[] = [];
 let dbStatus = 200;
-let geminiUp = true;
+let geminiUp = true, vertexUp = true;
 Deno.env.set("SUPABASE_URL", "https://db.test");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "service");
 let script: Array<{ status: number; body: unknown }> = [];
@@ -14,8 +14,11 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     dbCalls.push(`${init?.method} ${url.slice(24)} ${(init?.headers as Record<string, string>).Prefer}`);
     return new Response(init?.method === "POST" && url.endsWith("redemptions") ? init.body as string : "", { status: dbStatus });
   }
-  if (!url.startsWith("https://generativelanguage.googleapis.com/")) return realFetch(input, init);
-  if (!init?.body) return new Response(geminiUp ? "{}" : "", { status: geminiUp ? 200 : 403 }); // health: model metadata
+  if (!/^https:\/\/(generativelanguage|aiplatform)\.googleapis\.com\//.test(url)) return realFetch(input, init);
+  if (url.endsWith(":countTokens")) { // health ping
+    const up = url.includes("aiplatform") ? vertexUp : geminiUp;
+    return new Response("{}", { status: up ? 200 : 403 });
+  }
   calls.push({ url, ...JSON.parse(String(init?.body)) });
   const next = script.shift() ?? { status: 500, body: {} };
   return new Response(JSON.stringify(next.body), { status: next.status });
@@ -23,8 +26,9 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 const gemini = (obj: unknown) => ({ status: 200, body: { candidates: [{ content: { parts: [{ text: JSON.stringify(obj) }] } }] } });
 
 await import("./index.ts");
+let ip = 0; // each call gets its own client IP, so the suite stays under the per-IP rate limit
 const post = (body: unknown, origin = "http://localhost:8765") =>
-  realFetch("http://localhost:8000", { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(body) })
+  realFetch("http://localhost:8000", { method: "POST", headers: { origin, "content-type": "application/json", "x-forwarded-for": `10.0.0.${++ip}` }, body: JSON.stringify(body) })
     .then(async (r) => ({ status: r.status, json: await r.json() }));
 const assert = (ok: unknown, what: string) => { if (!ok) throw new Error("FAILED: " + what); console.log("ok  " + what); };
 
@@ -85,5 +89,21 @@ assert(r.status === 200 && r.json.ai.ok && r.json.database.ok && r.json.version 
 geminiUp = false; dbStatus = 500;
 r = await post({ task: "health" });
 assert(r.status === 200 && !r.json.ai.ok && !r.json.database.ok, "health: failures reported, not thrown");
+// Vertex AI first when its key is set; the Gemini API key takes over if Vertex fails
+Deno.env.set("VERTEX_API_KEY", "vertex-test");
+script = [gemini({ item: "Glove", category: "Yellow", confidence: 0.9, reason: "r", handling: "h" })];
+r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" });
+assert(r.json.result.category === "Yellow" && String(calls.at(-1)!.url).startsWith("https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-lite:generateContent"), "vertex: asked first");
+script = [{ status: 403, body: { error: "billing" } }, gemini({ item: "Glove", category: "Yellow", confidence: 0.9, reason: "r", handling: "h" })];
+r = await post({ task: "classify", image: "aGVsbG8=", mediaType: "image/jpeg" });
+assert(r.status === 200 && String(calls.at(-1)!.url).includes("generativelanguage") && String(calls.at(-2)!.url).includes("aiplatform"), "vertex: failure falls back to the Gemini API key");
+script = [{ status: 403, body: {} }, { status: 403, body: {} }];
+assert((await post({ task: "brief", data: { a: 1 } })).status === 502, "vertex: both services down is reported, not hidden");
+geminiUp = true; vertexUp = false; dbStatus = 200;
+r = await post({ task: "health" });
+assert(r.json.ai.ok && r.json.ai.via === "Gemini API" && r.json.services.length === 2 && !r.json.services[0].ok, "health: shows Vertex down and the fallback answering");
+vertexUp = true;
+r = await post({ task: "health" });
+assert(r.json.ai.via === "Vertex AI" && r.json.ai.ok, "health: Vertex AI answers first when up");
 console.log("all checks passed");
 Deno.exit(0);

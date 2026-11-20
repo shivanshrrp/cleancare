@@ -12,12 +12,13 @@
 // Text fields come back in the language named by `lang` (e.g. "Hindi"). The app only ever *suggests* a colour:
 // staff confirm before anything is logged. A request with no task is treated as "classify" (older app versions).
 //
-// Set GEMINI_API_KEY in Supabase -> Edge Functions -> Secrets (key from Google AI Studio).
+// Secrets (Supabase -> Edge Functions -> Secrets): VERTEX_API_KEY (Google Cloud, Vertex AI; used first, optional)
+// and GEMINI_API_KEY (Google AI Studio; the fallback). At least one is needed.
 // Note: on Gemini's free tier, Google may use requests to improve its products.
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
-const FUNCTION_VERSION = "2.1.3";
+const FUNCTION_VERSION = "2.2.0";
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -127,9 +128,9 @@ Deno.serve(async (req) => {
   }
   const task = body.task ?? "classify";
   if (task === "reset") return resetSamples(body, reply);
-  const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
-  if (task === "health") return reply(await health(apiKey));
-  if (!apiKey) return reply({ error: "Set GEMINI_API_KEY" }, 503);
+  const providers = aiProviders();
+  if (task === "health") return reply(await health(providers));
+  if (!providers.length) return reply({ error: "Set VERTEX_API_KEY or GEMINI_API_KEY" }, 503);
   // The language name goes into the prompt, so only plain names are accepted ("Hindi", "Odia (Oriya)")
   const lang = typeof body.lang === "string" && /^[A-Za-z][A-Za-z ()-]{1,39}$/.test(body.lang) ? body.lang : "English";
 
@@ -137,7 +138,7 @@ Deno.serve(async (req) => {
     if (task === "classify") {
       if (!isBase64(body.image)) return reply({ error: "image must be base64 and under ~2 MB" }, 400);
       if (!IMAGE_TYPES.includes(body.mediaType as string)) return reply({ error: `mediaType must be one of ${IMAGE_TYPES.join(", ")}` }, 400);
-      const json = await askGemini(apiKey, [{ inline_data: { mime_type: body.mediaType, data: body.image } }, { text: classifyPrompt(lang) }], RESULT_SCHEMA);
+      const json = await askGemini(providers, [{ inline_data: { mime_type: body.mediaType, data: body.image } }, { text: classifyPrompt(lang) }], RESULT_SCHEMA);
       const result = cleanResult(json);
       // App versions before 2.1 send no task and read a single "ITEM | CATEGORY | REASON" line
       if (!body.task) {
@@ -148,13 +149,13 @@ Deno.serve(async (req) => {
     }
     if (task === "voice") {
       if (!isBase64(body.audio)) return reply({ error: "audio must be base64 WAV and under ~2 MB" }, 400);
-      const json = await askGemini(apiKey, [{ inline_data: { mime_type: "audio/wav", data: body.audio } }, { text: voicePrompt(lang) }], RESULT_SCHEMA);
+      const json = await askGemini(providers, [{ inline_data: { mime_type: "audio/wav", data: body.audio } }, { text: voicePrompt(lang) }], RESULT_SCHEMA);
       return reply({ result: cleanResult(json) });
     }
     if (task === "brief") {
       const size = JSON.stringify(body.data ?? null).length;
       if (!body.data || typeof body.data !== "object" || size > MAX_BRIEF_CHARS) return reply({ error: "data must be an object under 20 KB" }, 400);
-      const json = await askGemini(apiKey, [{ text: briefPrompt(lang, body.data) }], BRIEF_SCHEMA);
+      const json = await askGemini(providers, [{ text: briefPrompt(lang, body.data) }], BRIEF_SCHEMA);
       return reply({ brief: cleanBrief(json) });
     }
     return reply({ error: "task must be classify, voice, brief, reset or health" }, 400);
@@ -166,7 +167,7 @@ Deno.serve(async (req) => {
 
 // Status for the About screen and pre-demo checks: can we reach Gemini and the database, and how fast.
 // Reads model metadata and one bag ID only, so it uses no generation quota and returns no data.
-async function health(apiKey: string | undefined) {
+async function health(providers: Provider[]) {
   const timed = async (check: () => Promise<boolean>) => {
     const t0 = Date.now();
     const ok = await check().catch(() => false);
@@ -178,11 +179,23 @@ async function health(apiKey: string | undefined) {
     return res.ok;
   };
   const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const [ai, database] = await Promise.all([
-    timed(async () => !!apiKey && await reachable(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}`, { "x-goog-api-key": apiKey })),
+  // countTokens is free on both services and proves the key, the model and the route all work
+  const ping = (p: Provider) => timed(async () => {
+    const res = await fetch(p.url(GEMINI_MODELS[0], "countTokens"), {
+      method: "POST", signal: AbortSignal.timeout(5000),
+      headers: { "x-goog-api-key": p.key, "content-type": "application/json" },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ping" }] }] }),
+    });
+    await res.body?.cancel();
+    return res.ok;
+  });
+  const [checks, database] = await Promise.all([
+    Promise.all(providers.map(async (p) => ({ via: p.name, ...await ping(p) }))),
     timed(async () => !!url && !!key && await reachable(`${url}/rest/v1/bags?select=id&limit=1`, { apikey: key, Authorization: `Bearer ${key}` })),
   ]);
-  return { version: FUNCTION_VERSION, ai: { ...ai, model: GEMINI_MODELS[0] }, database };
+  // "ai" is the service that will answer first; every configured service is listed too
+  const ai = checks.find((c) => c.ok) ?? checks[0] ?? { via: "none", ok: false, ms: 0 };
+  return { version: FUNCTION_VERSION, ai: { ...ai, model: GEMINI_MODELS[0] }, services: checks, database };
 }
 
 // Admin "Reset Demo" on the shared database. Visitors have no delete rights (supabase-setup.sql), so the
@@ -233,14 +246,39 @@ function cleanBrief(b: Record<string, unknown>) {
 
 // Google Gemini generateContent with JSON output. Moves on to the next model when one is busy or rate-limited.
 // If a model rejects the JSON schema, it retries once with JSON output only (the prompt still describes the shape).
-async function askGemini(apiKey: string, parts: unknown[], schema: unknown): Promise<Record<string, unknown>> {
+// Gemini is reached two ways, tried in order. Vertex AI (Google Cloud, billed to the project's Cloud credits; requests
+// aren't used for training) comes first when VERTEX_API_KEY is set; the Gemini API key from AI Studio is the fallback,
+// so a Vertex problem never takes the AI features down. Both take the same request body.
+type Provider = { name: string; key: string; url: (model: string, method: string) => string };
+function aiProviders(): Provider[] {
+  const vertex = Deno.env.get("VERTEX_API_KEY")?.trim(), gemini = Deno.env.get("GEMINI_API_KEY")?.trim();
+  const list: Provider[] = [];
+  if (vertex) list.push({ name: "Vertex AI", key: vertex, url: (m, fn) => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:${fn}` });
+  if (gemini) list.push({ name: "Gemini API", key: gemini, url: (m, fn) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:${fn}` });
+  return list;
+}
+
+async function askGemini(providers: Provider[], parts: unknown[], schema: unknown): Promise<Record<string, unknown>> {
+  const errors: string[] = [];
+  for (const p of providers) {
+    try {
+      return await askVia(p, parts, schema);
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+      console.error(`${p.name} failed, trying the next service`);
+    }
+  }
+  throw new Error(errors.join(" | "));
+}
+
+async function askVia(p: Provider, parts: unknown[], schema: unknown): Promise<Record<string, unknown>> {
   let lastError = "";
   for (const model of GEMINI_MODELS) {
     for (const withSchema of [true, false]) {
       const started = Date.now();
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      const res = await fetch(p.url(model, "generateContent"), {
         method: "POST",
-        headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+        headers: { "x-goog-api-key": p.key, "content-type": "application/json" },
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
           // Minimal thinking keeps replies quick; thinking still counts toward maxOutputTokens on Gemini 3.x
@@ -254,14 +292,14 @@ async function askGemini(apiKey: string, parts: unknown[], schema: unknown): Pro
         }),
       });
       const body = await res.json().catch(() => ({}));
-      console.log(`Gemini ${model}${withSchema ? "" : " (no schema)"} answered in ${Date.now() - started} ms (HTTP ${res.status})`);
+      console.log(`${p.name} ${model}${withSchema ? "" : " (no schema)"} answered in ${Date.now() - started} ms (HTTP ${res.status})`);
       if (res.ok) {
         type Part = { text?: string; thought?: boolean };
         const out: Part[] = body.candidates?.[0]?.content?.parts ?? [];
         const text = out.filter((p) => p.text && !p.thought).map((p) => p.text).join("").trim();
         return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
       }
-      lastError = `Gemini ${model} error ${res.status} ${JSON.stringify(body.error ?? body).slice(0, 500)}`;
+      lastError = `${p.name} ${model} error ${res.status} ${JSON.stringify(body.error ?? body).slice(0, 500)}`;
       if (!(res.status === 400 && withSchema)) break; // only a rejected schema is worth retrying without it
     }
     if (!/error (429|503)/.test(lastError)) break; // only busy/limit errors are worth another model
