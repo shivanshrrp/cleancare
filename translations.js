@@ -514,6 +514,11 @@ window.CLEANCARE_I18N = {
     "auth.role.admin": "Municipal / Admin",
     "auth.logout": "Log out",
     "menu.open": "Account and settings",
+    "theme.label": "Theme",
+    "theme.light": "Light",
+    "theme.dark": "Dark",
+    "theme.system": "System",
+    "theme.toggle": "Switch between light and dark theme",
     "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
@@ -990,6 +995,11 @@ window.CLEANCARE_I18N = {
     "auth.role.admin": "नगर निगम / एडमिन",
     "auth.logout": "लॉग आउट करें",
     "menu.open": "खाता और सेटिंग्स",
+    "theme.label": "थीम",
+    "theme.light": "लाइट",
+    "theme.dark": "डार्क",
+    "theme.system": "सिस्टम",
+    "theme.toggle": "लाइट और डार्क थीम के बीच बदलें",
     "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
@@ -1466,6 +1476,11 @@ window.CLEANCARE_I18N = {
     "auth.role.admin": "महानगरपालिका / ॲडमिन",
     "auth.logout": "लॉग आउट करा",
     "menu.open": "खाते आणि सेटिंग्ज",
+    "theme.label": "थीम",
+    "theme.light": "लाइट",
+    "theme.dark": "डार्क",
+    "theme.system": "सिस्टम",
+    "theme.toggle": "लाइट आणि डार्क थीममध्ये बदला",
     "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };
