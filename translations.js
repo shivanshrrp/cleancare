@@ -519,6 +519,12 @@ window.CLEANCARE_I18N = {
     "theme.dark": "Dark",
     "theme.system": "System",
     "theme.toggle": "Switch between light and dark theme",
+    "auth.or": "or",
+    "demo.try": "Try the demo",
+    "demo.trySub": "No account needed. Explore sample clinics, bags and rewards as:",
+    "demo.banner": "Demo mode: you're using sample data. Nothing here reaches the live system.",
+    "demo.exit": "Exit demo",
+    "demo.pill": "Demo",
     "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
@@ -1000,6 +1006,12 @@ window.CLEANCARE_I18N = {
     "theme.dark": "डार्क",
     "theme.system": "सिस्टम",
     "theme.toggle": "लाइट और डार्क थीम के बीच बदलें",
+    "auth.or": "या",
+    "demo.try": "डेमो आज़माएँ",
+    "demo.trySub": "खाते की ज़रूरत नहीं। नमूना क्लीनिक, बैग और रिवॉर्ड देखें, इस रूप में:",
+    "demo.banner": "डेमो मोड: आप नमूना डेटा इस्तेमाल कर रहे हैं। यहाँ का कुछ भी लाइव सिस्टम तक नहीं पहुँचता।",
+    "demo.exit": "डेमो से बाहर निकलें",
+    "demo.pill": "डेमो",
     "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
@@ -1481,6 +1493,12 @@ window.CLEANCARE_I18N = {
     "theme.dark": "डार्क",
     "theme.system": "सिस्टम",
     "theme.toggle": "लाइट आणि डार्क थीममध्ये बदला",
+    "auth.or": "किंवा",
+    "demo.try": "डेमो वापरून पाहा",
+    "demo.trySub": "खात्याची गरज नाही. नमुना दवाखाने, बॅग आणि बक्षिसे पाहा, या भूमिकेत:",
+    "demo.banner": "डेमो मोड: तुम्ही नमुना डेटा वापरत आहात. येथील काहीही लाइव्ह प्रणालीपर्यंत पोहोचत नाही.",
+    "demo.exit": "डेमोमधून बाहेर पडा",
+    "demo.pill": "डेमो",
     "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };

@@ -141,6 +141,12 @@ Everyone signs in with an email or mobile number and a password. Each role sees 
 All three test accounts use the password `CleanCare@2026`. Sessions last 7 days on a device; Log out is in the account
 menu (the person icon) and also clears that device's working choices.
 
+**Try demo** on the sign-in screen needs no account: pick Clinic, Collector or Municipal and the app opens with
+sample data (10 clinics, bags in every colour across two collection routes, reward points, a leaderboard, an inactive
+clinic and AI-checked bags). Demo data lives only in that browser under its own key and never connects to the shared
+database; a banner and a "Demo" badge stay on screen, **Reset Demo** reloads the samples and **Exit demo** deletes
+them. (The AI photo check still calls the AI service, which stores nothing.)
+
 **This is a mock sign-in, not security.** Accounts live in `index.html` with their passwords stored only as SHA-256
 hashes, and the session keeps just the user and a random token. It decides which screens each role sees, but the
 database itself is still open to anyone with the site link. Before using CleanCare with real clinic data, replace
