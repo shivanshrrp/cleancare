@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
-<script src="translations.js?v=2.1.4" onerror="window.__i18nFailed = true"></script>
+<script src="translations.js?v=2.3.0" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -25,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js?v=2.1.4" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.3.0" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -577,6 +577,34 @@
   .modal.about p { margin-bottom: 10px; }
   .modal.about .menu-list { margin-top: 14px; }
   .auth-about { display: block; margin: 16px auto 0; font-size: 13px; }
+  .auth-status { margin: -12px 0 18px; text-align: center; font-size: 12px; color: var(--muted); }
+  .auth-status:not(:empty)::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: 1px; }
+  .auth-status.down::before { background: var(--orange-ink); }
+  .judge-btn { width: 100%; margin-bottom: 14px; }
+  /* Judge's tour: a small checklist that stays on screen in demo mode */
+  .tour { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(340px, calc(100vw - 32px)); background: var(--white);
+    border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, .18); padding: 14px; }
+  .tour-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tour-head b { font-size: 15px; }
+  .tour-x { border: 0; background: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; min-width: 44px; min-height: 44px; margin: -10px -10px -10px 0; }
+  .tour-sub { margin: 2px 0 10px; color: var(--muted); font-size: 12.5px; }
+  .tour-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tour-step { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer;
+    background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; min-height: 44px; }
+  .tour-step:hover { border-color: var(--green); }
+  .tour-step .i { flex: none; color: var(--green-ink); }
+  .tour-step b { display: block; font-size: 13.5px; }
+  .tour-step small { display: block; color: var(--muted); font-size: 12px; }
+  .tour-step.done { opacity: .72; }
+  .tour-step.done b { text-decoration: line-through; }
+  .tour-min { position: fixed; right: 16px; bottom: 16px; z-index: 40; box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+  .assist-samples { margin-top: 12px; }
+  .assist-samples > small { display: block; color: var(--muted); font-size: 12.5px; margin-bottom: 6px; }
+  .sample-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .assist-sample { border: 1px solid var(--border); background: var(--white); border-radius: 10px; padding: 4px; cursor: pointer; font: inherit; color: var(--text); }
+  .assist-sample:hover { border-color: var(--green); }
+  .assist-sample img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; }
+  .assist-sample span { display: block; font-size: 11.5px; line-height: 1.25; padding: 4px 2px 2px; }
   .auth-or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 18px 0 14px; }
   .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .demo-pick h2 { font-size: 15px; margin: 0 0 2px; }
@@ -652,6 +680,8 @@
     .lang-btn.mobile-only .lang-cur { display: none; }
     .lang-btn.mobile-only svg.i { width: 20px; height: 20px; }
     .demo-banner { padding: 8px 16px; }
+    .tour, .tour-min { bottom: calc(76px + env(safe-area-inset-bottom)); }
+    .sample-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stats { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .rw-top { grid-template-columns: 1fr; gap: 10px; }
     .fund-grid { gap: 10px; }
@@ -722,6 +752,7 @@
     <img class="brand-logo" id="authLogo" alt="">
     <h1 data-i18n="auth.title">Sign in to CleanCare</h1>
     <p class="auth-sub" data-i18n="auth.sub">Track every biomedical waste bag from clinic to treatment.</p>
+    <p class="auth-status" id="authStatus" aria-live="polite"></p>
     <form id="authForm" novalidate>
       <label class="field"><span data-i18n="auth.id">Email or mobile number</span>
         <input id="authId" type="text" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="authMsg" placeholder="name@clinic.in or 98765 43210" data-i18n-ph="auth.idPh"></label>
@@ -732,6 +763,7 @@
     </form>
     <div class="auth-or" data-i18n="auth.or">or</div>
     <div class="demo-pick">
+      <button class="btn judge-btn" type="button" id="tourStart"><span data-icon="sparkle"></span><span data-i18n="tour.start">Judging CleanCare? Take the 2-minute tour</span></button>
       <h2 data-i18n="demo.try">Try the demo</h2>
       <p data-i18n="demo.trySub">No account needed. Explore sample clinics, bags and rewards as:</p>
       <div class="demo-roles">
@@ -773,6 +805,7 @@
   <div class="main">
     <div class="demo-banner" id="demoBanner" role="status" hidden>
       <span data-i18n="demo.banner">Demo mode: you're using sample data. Nothing here reaches the live system.</span>
+      <button class="btn ghost" type="button" id="tourOpen"><span data-icon="sparkle"></span><span data-i18n="tour.open">Tour</span></button>
       <button class="btn ghost" type="button" id="demoReset"><span data-icon="reset"></span><span data-i18n="reset.button">Reset Demo</span></button>
       <button class="btn ghost" type="button" id="demoExit"><span data-icon="logout"></span><span data-i18n="demo.exit">Exit demo</span></button>
     </div>
@@ -918,7 +951,7 @@
           <div class="cats" id="catCards"></div>
         </div>
 
-        <div class="card">
+        <div class="card" id="exCard">
           <div class="card-head">
             <div><h2 data-i18n="monitor.exceptions">Exceptions</h2><p data-i18n="monitor.exSub">Bags missed at pickup, uncollected after 24 hours, or with a weight mismatch over 10%</p></div>
             <div class="legend"><span class="l-missed" data-i18n="monitor.legendMissed">Missed or overdue</span><span class="l-weight" data-i18n="monitor.legendWeight">Weight mismatch</span></div>
@@ -1071,6 +1104,13 @@
     </div>
   </div>
 </div>
+<aside class="tour" id="tourPanel" hidden aria-labelledby="tourTitle">
+  <div class="tour-head"><b id="tourTitle" data-i18n="tour.title">Judge's tour</b>
+    <button class="tour-x" type="button" id="tourClose" aria-label="Close the tour" data-i18n-aria="tour.close">×</button></div>
+  <p class="tour-sub" data-i18n="tour.sub">Six quick stops, about 2 minutes, on sample data.</p>
+  <ol class="tour-steps" id="tourSteps"></ol>
+</aside>
+<button class="btn tour-min" type="button" id="tourMin" hidden></button>
 <div class="modal-backdrop" id="aboutModal" hidden>
   <div class="modal about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
     <div class="about-head"><img class="brand-logo" id="aboutLogo" alt="">
@@ -1106,7 +1146,7 @@
   </div>
 </div>
 
-<script src="rules.js?v=2.1.4" onerror="window.__rulesFailed = true"></script>
+<script src="rules.js?v=2.3.0" onerror="window.__rulesFailed = true"></script>
 <script>
 // ---------- sign-in ----------
 // ponytail: mock accounts checked in the browser. This decides which screens each role sees; it is not security,
@@ -1187,7 +1227,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.3.0';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -2127,6 +2167,10 @@ function setScanAssist(value) {
 
 const assistHead = (titleKey) => `<div class="assist-head"><b>${esc(t(titleKey))}</b><button class="assist-close" type="button" data-assist="close">${esc(t('assist.close'))}</button></div>`;
 const uploadButton = (primary) => `<label class="btn ${primary ? '' : 'ghost '}file-btn">${icon('image')}${esc(t('assist.upload'))}<input type="file" accept="image/*" capture="environment" data-assist-file></label>`;
+// Drawn sample items (one per bag colour) so anyone can try the photo check without real waste at hand
+const SAMPLES = ['syringe', 'gloves', 'cotton', 'vial'];
+const sampleRow = () => (AI_ENDPOINT ? `<div class="assist-samples"><small>${esc(t('assist.samples'))}</small><div class="sample-grid">${
+  SAMPLES.map((id) => `<button class="assist-sample" type="button" data-assist-sample="${id}"><img src="samples/${id}.jpg?v=${APP_VERSION}" alt="" loading="lazy"><span>${esc(t('sample.' + id))}</span></button>`).join('')}</div></div>` : '');
 const assistThumb = () => (assistPhoto
   ? `<img class="assist-thumb" src="${assistPhoto}" alt="${esc(t('assist.photoAlt'))}">`
   : `<div class="assist-thumb voice" aria-hidden="true">${icon('mic')}</div>`);
@@ -2145,12 +2189,12 @@ async function openAssist() {
       <button class="btn" type="button" data-assist="shoot">${icon('camera')}${esc(t('assist.takePhoto'))}</button>
       ${uploadButton(false)}
       ${AI_ENDPOINT ? `<button class="btn ghost" type="button" data-assist="voice">${icon('mic')}${esc(t('assist.voice'))}</button>` : ''}
-    </div>`;
+    </div>${sampleRow()}`;
   const noCamera = (whyKey) => {
     assistRedo = () => noCamera(whyKey);
     panel.innerHTML = `${assistHead('assist.photograph')}
       <div class="msg warn" style="display:block">${esc(t(whyKey))} ${esc(t('assist.noCam.tail'))}</div>
-      <div class="assist-actions">${uploadButton(true)}${AI_ENDPOINT ? `<button class="btn ghost" type="button" data-assist="voice">${icon('mic')}${esc(t('assist.voice'))}</button>` : ''}</div>`;
+      <div class="assist-actions">${uploadButton(true)}${AI_ENDPOINT ? `<button class="btn ghost" type="button" data-assist="voice">${icon('mic')}${esc(t('assist.voice'))}</button>` : ''}</div>${sampleRow()}`;
   };
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !window.isSecureContext) {
     return noCamera('assist.noCam.browser');
@@ -2298,7 +2342,17 @@ function chooseManually() {
 
 $('assistBtn').addEventListener('click', openAssist);
 
+// A sample goes through exactly the same path as an uploaded photo
+function checkImageUrl(src) {
+  const img = new Image();
+  img.onload = () => checkPhoto(toJpeg(img, img.naturalWidth, img.naturalHeight));
+  img.onerror = () => { $('assistPanel').insertAdjacentHTML('beforeend', `<div class="msg err" style="display:block">${esc(t('assist.badFile'))}</div>`); };
+  img.src = src;
+  return img;
+}
 $('assistPanel').addEventListener('click', (e) => {
+  const sample = e.target.closest('[data-assist-sample]');
+  if (sample) return void checkImageUrl(`samples/${sample.dataset.assistSample}.jpg?v=${APP_VERSION}`);
   const chip = e.target.closest('[data-assist-item]');
   if (chip) {
     const sug = keywordSuggest(chip.dataset.assistItem, chip.dataset.assistLabel);
@@ -2355,11 +2409,8 @@ $('assistPanel').addEventListener('keydown', (e) => {
 $('assistPanel').addEventListener('change', (e) => {
   const input = e.target.closest('[data-assist-file]');
   if (!input || !input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const img = new Image();
-  img.onload = () => { checkPhoto(toJpeg(img, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(img.src); };
-  img.onerror = () => { $('assistPanel').insertAdjacentHTML('beforeend', `<div class="msg err" style="display:block">${esc(t('assist.badFile'))}</div>`); };
-  img.src = URL.createObjectURL(file);
+  const url = URL.createObjectURL(input.files[0]);
+  checkImageUrl(url).addEventListener('load', () => URL.revokeObjectURL(url));
 });
 
 // Picking a different colour by hand turns the bag back into a manual choice
@@ -3677,16 +3728,16 @@ function openAbout() {
   $('aboutVer').textContent = t('about.version', { v: APP_VERSION, date });
   $('aboutModal').hidden = false;
   $('aboutClose').focus();
-  showHealth();
+  showHealth($('aboutHealth'));
 }
 // Live status of the two services the app depends on, from the server function's "health" task
-async function showHealth() {
-  const el = $('aboutHealth');
+async function showHealth(el) {
   const state = (x) => x && x.ok ? `${t('health.online')} (${x.ms} ms)` : t('health.offline');
   el.textContent = t('health.checking');
   let h = null;
   try { h = await askAI({ task: 'health' }); } catch (e) { console.error(e); }
   el.textContent = t('health.line', { ai: state(h && h.ai), db: cloud ? state(h && h.database) : t('health.demo') });
+  el.classList.toggle('down', !(h && h.ai && h.ai.ok && (!cloud || (h.database && h.database.ok))));
 }
 function closeAbout() { $('aboutModal').hidden = true; }
 $('aboutLogo').src = document.querySelector('.sidebar .brand-logo').src;
@@ -3700,6 +3751,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('abou
 document.querySelectorAll('[data-demo-role]').forEach((b) => b.addEventListener('click', () => {
   try {
     localStorage.removeItem(DEMO_STORE_KEY); // every demo starts from fresh sample data
+    localStorage.removeItem('cleancare-tour'); // a plain demo starts without the judge's tour
     startSession(DEMO_USERS[b.dataset.demoRole], true);
     location.reload();
   } catch (err) { console.error(err); showMsg($('authMsg'), 'err', t('auth.err.failed')); }
@@ -3709,6 +3761,56 @@ if (DEMO) {
   setText($('menuLogout').querySelector('[data-i18n]'), 'demo.exit');
 }
 $('demoReset').addEventListener('click', openReset);
+
+// ---------- judge's tour ----------
+// Six stops that open each headline feature on the demo data. State lives on this device only.
+const TOUR_KEY = 'cleancare-tour';
+const TOUR_STEPS = [['photo', 'camera'], ['voice', 'mic'], ['track', 'route'], ['alerts', 'alert'], ['brief', 'dashboard'], ['status', 'check']];
+const tourGet = () => { try { return JSON.parse(localStorage.getItem(TOUR_KEY)) || null; } catch (e) { return null; } };
+const tourSet = (s) => { try { localStorage.setItem(TOUR_KEY, JSON.stringify(s)); } catch (e) {} renderTour(); };
+function renderTour() {
+  const s = tourGet(), on = !!(DEMO && s && s.open);
+  $('tourPanel').hidden = !on || s.min;
+  $('tourMin').hidden = !on || !s.min;
+  if (!on) return;
+  $('tourMin').innerHTML = `${icon('sparkle')}${esc(t('tour.progress', { n: s.done.length, total: TOUR_STEPS.length }))}`;
+  $('tourSteps').innerHTML = TOUR_STEPS.map(([id, ic], i) => {
+    const done = s.done.includes(id);
+    return `<li><button class="tour-step${done ? ' done' : ''}" type="button" data-tour="${id}">${icon(done ? 'check' : ic)}<span><b>${i + 1}. ${esc(t('tour.' + id))}</b><small>${esc(t('tour.' + id + '.sub'))}</small></span></button></li>`;
+  }).join('');
+}
+const TOUR_ACTIONS = {
+  photo: () => { setRole('clinic'); openAssist(); $('assistPanel').scrollIntoView({ block: 'center' }); },
+  voice: () => { setRole('clinic'); $('assistPanel').hidden = false; showVoice(); $('assistPanel').scrollIntoView({ block: 'center' }); },
+  track: () => { const b = db.bags.find((x) => stepEvent(x, 'treated')) || db.bags[0]; if (b) openTrack(b.id); window.scrollTo(0, 0); },
+  alerts: () => { setRole('monitor'); $('exCard').scrollIntoView({ block: 'start' }); },
+  brief: () => { setRole('monitor'); $('briefCard').scrollIntoView({ block: 'start' }); makeBrief(); },
+  status: () => openAbout(),
+};
+$('tourSteps').addEventListener('click', (e) => {
+  const id = e.target.closest('[data-tour]')?.dataset.tour;
+  if (!id) return;
+  const s = tourGet() || { open: true, done: [] };
+  if (!s.done.includes(id)) s.done.push(id);
+  s.min = true; // get out of the way of the screen it just opened
+  tourSet(s);
+  TOUR_ACTIONS[id]();
+});
+$('tourMin').addEventListener('click', () => { const s = tourGet(); if (s) { s.min = false; tourSet(s); } });
+$('tourClose').addEventListener('click', () => { const s = tourGet(); if (s) { s.open = false; tourSet(s); } });
+$('tourOpen').addEventListener('click', () => tourSet({ ...(tourGet() || { done: [] }), open: true, min: false }));
+$('tourStart').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(DEMO_STORE_KEY); // fresh sample data, as for any demo
+    localStorage.setItem(INTRO_KEY, '1');    // the tour replaces the first-run intro
+    localStorage.setItem(TOUR_KEY, JSON.stringify({ open: true, min: false, done: [] }));
+    startSession(DEMO_USERS.admin, true);    // the admin view has every screen
+    location.reload();
+  } catch (err) { console.error(err); showMsg($('authMsg'), 'err', t('auth.err.failed')); }
+});
+renderTour();
+// Signed out: show judges at once that the AI and database are live
+if (document.documentElement.dataset.auth === 'out') showHealth($('authStatus'));
 $('demoExit').addEventListener('click', exitDemo);
 
 // ---------- account menu ----------
