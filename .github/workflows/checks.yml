@@ -31,11 +31,19 @@ jobs:
       - name: Translations
         run: deno run --allow-read tools/check-translations.js
 
-      - name: Database guards on a real Postgres
+      - name: Database guards and per-role access on a real Postgres
         run: |
-          # The two Supabase pieces supabase-setup.sql expects
-          psql -v ON_ERROR_STOP=1 -c "create role anon nologin; create publication supabase_realtime;"
+          # Stand-ins for the Supabase pieces the SQL expects: roles, the realtime publication, and auth's users + uid()
+          psql -v ON_ERROR_STOP=1 -c "create role anon nologin; create role authenticated nologin; create publication supabase_realtime;
+            create schema auth; create table auth.users (id uuid primary key, email text);
+            create function auth.uid() returns uuid language sql stable as \$\$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid \$\$;
+            grant usage on schema public, auth to anon, authenticated; grant execute on function auth.uid() to anon, authenticated;"
           psql -v ON_ERROR_STOP=1 -f supabase-setup.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/auth-roles.sql
+          # Supabase grants table access to its API roles by default; the policies then decide row by row
+          psql -v ON_ERROR_STOP=1 -c "grant select, insert, update, delete on public.bags, public.redemptions to anon, authenticated; grant select on public.profiles to authenticated; grant usage on all sequences in schema public to authenticated;"
           # The test always ends by raising "ALL n CHECKS PASSED" so that it rolls back; anything else is a failure
           psql -f supabase/guard-test.sql 2>&1 | tee guard.log || true
           grep -q "CHECKS PASSED" guard.log
+          psql -f supabase/auth-test.sql 2>&1 | tee auth.log || true
+          grep -q "ROLE CHECKS PASSED" auth.log
