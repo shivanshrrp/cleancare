@@ -595,6 +595,10 @@ window.CLEANCARE_I18N = {
     "sample.gloves": "Used gloves",
     "sample.cotton": "Blood-soaked cotton",
     "sample.vial": "Broken vial",
+    "auth.emailLabel": "Email",
+    "auth.emailPh": "name@clinic.in",
+    "auth.err.emailOnly": "Enter the email address of your CleanCare account.",
+    "auth.err.noProfile": "This account isn’t set up yet. Ask your CleanCare admin to give it a role.",
     "lang.failed": "Couldn't load that language. Check your connection and try again."
   },
 
@@ -1152,6 +1156,10 @@ window.CLEANCARE_I18N = {
     "sample.gloves": "इस्तेमाल किए दस्ताने",
     "sample.cotton": "खून से सनी रुई",
     "sample.vial": "टूटी शीशी",
+    "auth.emailLabel": "ईमेल",
+    "auth.emailPh": "name@clinic.in",
+    "auth.err.emailOnly": "अपने CleanCare खाते का ईमेल पता लिखें।",
+    "auth.err.noProfile": "यह खाता अभी तैयार नहीं है। अपने CleanCare एडमिन से इसकी भूमिका तय करवाएँ।",
     "lang.failed": "वह भाषा लोड नहीं हो सकी। कनेक्शन जाँचें और फिर कोशिश करें।"
   },
 
@@ -1709,6 +1717,10 @@ window.CLEANCARE_I18N = {
     "sample.gloves": "वापरलेले हातमोजे",
     "sample.cotton": "रक्ताने भिजलेला कापूस",
     "sample.vial": "फुटलेली कुपी",
+    "auth.emailLabel": "ईमेल",
+    "auth.emailPh": "name@clinic.in",
+    "auth.err.emailOnly": "तुमच्या CleanCare खात्याचा ईमेल पत्ता लिहा.",
+    "auth.err.noProfile": "हे खाते अजून तयार नाही. तुमच्या CleanCare अ‍ॅडमिनला त्याची भूमिका ठरवायला सांगा.",
     "lang.failed": "ती भाषा लोड झाली नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
   }
 };

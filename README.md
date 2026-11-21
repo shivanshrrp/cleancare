@@ -46,7 +46,7 @@ protects a bag's history is enforced by the database itself, so it holds whoever
 | Working product | Full chain of custody (log → collect → in transit → received → treated), QR labels and scanning, live sync across devices, five roles, web and Android | `index.html`, live links above |
 | Google AI (Gemini) | Three features through one server function: **photo check** (image → CPCB bag colour, confidence, safe-handling step), **voice check** (staff describe an item in any Indian language → transcript + colour), **AI daily brief** for the regulator. Grounded in Schedule I of the BMW Rules 2016; JSON output checked against a schema; low-confidence answers ask for a retry; runs on **Vertex AI** first and falls back to the Gemini API key if Vertex is slow (8 s) or down, and to a second model when the first is busy; replies in the user's language. **Measured: 20 of 20 correct, median 1.6 s** on spoken items in Hindi, English and Tamil ([docs/ai-eval.md](docs/ai-eval.md)) | `supabase/functions/classify-waste/index.ts`, `tools/eval-voice.py` |
 | Google Cloud | Hosted on Firebase Hosting and Gemini served by Vertex AI, both in project `cleancare-srrp`; Gemini API key from Google AI Studio as the fallback; Google Noto fonts for all Indian scripts | `firebase.json`, `.firebaserc` |
-| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; the database itself enforces the chain of custody (write-once handovers, history that only grows, ID and weight checks); visitors cannot delete data; live health check (About screen). **66 automated checks, run by GitHub Actions on every push**: 22 on the rules, 28 on the server function, 16 on the database guards (on a real Postgres), plus the translation checker | `rules.js`, `tools/test-rules.js`, `test.ts`, `supabase/guard-test.sql`, `.github/workflows/checks.yml` |
+| Engineering | Static app with no build step; Supabase Postgres + realtime; server-side API key, origin allowlist and rate limit; the database itself enforces the chain of custody (write-once handovers, history that only grows, ID and weight checks); visitors cannot delete data; live health check (About screen). **85 automated checks, run by GitHub Actions on every push**: 22 on the rules, 30 on the server function, 16 on the database guards and 17 on per-role access (both on a real Postgres), plus the translation checker | `rules.js`, `tools/test-rules.js`, `test.ts`, `supabase/guard-test.sql`, `.github/workflows/checks.yml` |
 | Accessibility and UX | English + all 22 Eighth Schedule languages (11 complete), right-to-left Urdu/Kashmiri/Sindhi, dark mode, WCAG AA contrast, 44 px tap targets, onboarding and demo mode | `translations.js`, `translations/` |
 | Problem fit | Built around the CPCB colour rules, the 24-hour CBWTF rule and the 10% weight check at every handover | *Chain of custody* below |
 
@@ -189,16 +189,30 @@ Dates use the chosen language's month and weekday names, with Latin digits.
 
 ## Sign-in
 
-Everyone signs in with an email or mobile number and a password. Each role sees only its own screens:
+People sign in with an email and password (Supabase Auth). Each account has a role in the `profiles` table, and the
+database itself enforces what each role may do, whoever writes (the app, the raw API or a script):
 
-| Role | Screens | Test account |
+| Role | Screens | In the database |
 |---|---|---|
-| Clinic | Clinic (its own clinic only), Track, Leaderboard | clinic@cleancare.test · 9000000003 |
-| Collector | Collector, Track | collector@cleancare.test · 9000000002 |
-| Municipal / Admin | Every screen, including the treatment facility; only role that can reset shared data | admin@cleancare.test · 9000000001 |
+| Clinic | Clinic (its own clinic only), Track, Leaderboard | Reads bags; logs new bags for its own clinic only; requests redemptions for itself |
+| Collector | Collector, Track | Reads bags; records pickup and the trip; cannot record arrival at the CBWTF or treatment |
+| Admin (municipal officer, CBWTF staff) | Every screen | Everything, including Reset Demo, which the server checks |
 
-All three test accounts use the password `CleanCare@2026`. Sessions last 7 days on a device; Log out is in the account
-menu (the person icon) and also clears that device's working choices.
+Signed-out visitors can't read or write anything, and nobody can delete through the app. The rules are in
+`supabase/auth-roles.sql`; `supabase/auth-test.sql` checks them by acting as each role (17 checks, run on every push).
+
+**Adding a person:** in Supabase, open **Authentication → Users → Add user**, enter their email and a password,
+tick *Auto confirm*, then give the account a role in the **SQL Editor** (change the email, name and code):
+
+```sql
+insert into public.profiles (user_id, role, name, clinic)
+select id, 'clinic', 'City Care Clinic', 'CCC' from auth.users where email = 'staff@citycare.in';
+-- collector: ... select id, 'collector', 'Ravi Kumar', null ... and set collector_id = 'COL-02'
+-- admin:     ... select id, 'admin', 'Municipal Officer', null ...
+```
+
+An account with no profile can sign in to Supabase but sees nothing, and the app tells them to ask an admin.
+Keep **Allow new users to sign up** turned off (Authentication → Sign In / Providers), so only the team creates accounts.
 
 **Try demo** on the sign-in screen needs no account: pick Clinic, Collector or Municipal and the app opens with
 sample data (10 clinics, bags in every colour across two collection routes, reward points, a leaderboard, an inactive
@@ -206,15 +220,14 @@ clinic and AI-checked bags). Demo data lives only in that browser under its own 
 database; a banner and a "Demo" badge stay on screen, **Reset Demo** reloads the samples and **Exit demo** deletes
 them. (The AI photo check still calls the AI service, which stores nothing.)
 
-**This is a mock sign-in, not security.** Accounts live in `index.html` with their passwords stored only as SHA-256
-hashes, and the session keeps just the user and a random token. It decides which screens each role sees, but anyone
-with the site link can still add or change bags in the database (not delete them). Before using CleanCare with real clinic data, replace
-`authService` with Supabase Auth (it has the same `signIn` shape) and add row-level security per role.
+**Local mode:** with `config.js` left blank, the app falls back to three built-in test accounts
+(admin@cleancare.test, collector@cleancare.test, clinic@cleancare.test, or mobile 9000000001–3, password in
+`index.html`'s comments for developers). They protect nothing and exist only for trying the app without a database.
 
 ## Notes
 
-- **Security and integrity:** visitors can read, add and update bags but cannot delete anything; the Gemini key
-  and the database's service key stay on the server. Whoever writes (the app, the raw API or a script), the
+- **Security and integrity:** only signed-in people with a role can read or write, each within their role; nobody
+  can delete through the app; the Gemini keys and the database's service key stay on the server. Whoever writes (the app, the raw API or a script), the
   database refuses: a changed bag ID, clinic, logging time or logged weight; editing or undoing a recorded
   handover; removing or editing past history; IDs that don't match the clinic; new weights over 50 kg. **Reset Demo** (admin) replaces the sample bags for everyone but
   keeps every bag logged in the app. Before real clinic data: Supabase Auth plus per-role row-level security.

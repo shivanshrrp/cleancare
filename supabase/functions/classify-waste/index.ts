@@ -18,7 +18,7 @@
 
 // Free-tier models, tried in order: 3.1 Flash-Lite answers in ~5 s but is sometimes "busy" (503);
 // 3.5 Flash-Lite is slower (15-40 s) but takes the overflow. Both: 15 requests/min, 500/day.
-const FUNCTION_VERSION = "2.2.2";
+const FUNCTION_VERSION = "2.4.0";
 const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 const ALLOWED_ORIGINS = ["https://shivanshrrp.github.io", "https://cleancare-srrp.web.app", "https://cleancare-srrp.firebaseapp.com", "http://localhost:8765"];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     return reply({ error: "Body must be JSON" }, 400);
   }
   const task = body.task ?? "classify";
-  if (task === "reset") return resetSamples(body, reply);
+  if (task === "reset") return resetSamples(body, reply, req.headers.get("authorization") ?? "");
   const providers = aiProviders();
   if (task === "health") return reply(await health(providers));
   if (!providers.length) return reply({ error: "Set VERTEX_API_KEY or GEMINI_API_KEY" }, 503);
@@ -203,7 +203,21 @@ async function health(providers: Provider[]) {
 // Admin "Reset Demo" on the shared database. Visitors have no delete rights (supabase-setup.sql), so the
 // only delete path is this one: it removes sample bags (no selection_method) and redemptions, nothing a
 // clinic logged in the app. ponytail: anyone can still trigger it; real admin checks need Supabase Auth.
-async function resetSamples(body: Record<string, unknown>, reply: (b: unknown, s?: number) => Response) {
+// Who is calling: the signed-in person's role from public.profiles, or null (no token, or not a real account)
+async function callerRole(auth: string, url: string, key: string): Promise<string | null> {
+  if (!/^Bearer ey/.test(auth)) return null;
+  const who = await fetch(`${url}/auth/v1/user`, { headers: { apikey: key, Authorization: auth } });
+  if (!who.ok) { await who.body?.cancel(); return null; }
+  const { id } = await who.json();
+  const res = await fetch(`${url}/rest/v1/profiles?select=role&user_id=eq.${encodeURIComponent(id)}`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  const rows = res.ok ? await res.json() : [];
+  return rows[0]?.role ?? null;
+}
+
+async function resetSamples(body: Record<string, unknown>, reply: (b: unknown, s?: number) => Response, auth: string) {
+  const env = Deno.env.get("SUPABASE_URL"), svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!env || !svc) return reply({ error: "Database not configured" }, 503);
+  if (await callerRole(auth, env, svc) !== "admin") return reply({ error: "Only an admin can reset the shared data" }, 403);
   const okRows = (a: unknown, max: number) => Array.isArray(a) && a.length <= max && a.every((r) => r && typeof r === "object" && !Array.isArray(r));
   if (!okRows(body.bags, 300) || !okRows(body.redemptions, 100)) return reply({ error: "bags and redemptions must be arrays of rows" }, 400);
   if ((body.bags as Record<string, unknown>[]).some((b) => typeof b.id !== "string" || !/^[A-Z0-9-]{3,40}$/.test(b.id) || b.selection_method != null)) {

@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js" onerror="window.__libFailed = true"></script>
 <script src="config.js" onerror="window.__cfgFailed = true"></script>
 <!-- ?v= matches APP_VERSION, so a new release never pairs a new page with yesterday's cached text files -->
-<script src="translations.js?v=2.3.0" onerror="window.__i18nFailed = true"></script>
+<script src="translations.js?v=2.4.0" onerror="window.__i18nFailed = true"></script>
 <script>
   // A saved language that isn't in translations.js is loaded before the app starts, so it opens in that language
   (function () {
@@ -25,7 +25,7 @@
       var code = localStorage.getItem('cleancare-lang');
       var known = (window.CLEANCARE_LANGUAGES || []).some(function (l) { return l.code === code; });
       if (code && known && !(window.CLEANCARE_I18N || {})[code]) {
-        document.write('<script src="translations/' + code + '.js?v=2.3.0" onerror="window.__langFailed = true"><\/script>');
+        document.write('<script src="translations/' + code + '.js?v=2.4.0" onerror="window.__langFailed = true"><\/script>');
       }
     } catch (e) {}
   })();
@@ -1146,15 +1146,16 @@
   </div>
 </div>
 
-<script src="rules.js?v=2.3.0" onerror="window.__rulesFailed = true"></script>
+<script src="rules.js?v=2.4.0" onerror="window.__rulesFailed = true"></script>
 <script>
 // ---------- sign-in ----------
-// ponytail: mock accounts checked in the browser. This decides which screens each role sees; it is not security,
-// since the shared database is still open to anyone with the site link. Before real clinic data, swap authService
-// for Supabase Auth (same signIn shape) and add row-level security per role.
+// With a database configured, people sign in with Supabase Auth (email + password) and their role comes from the
+// profiles table; the database enforces what each role may do (supabase/auth-roles.sql). Without one (local mode),
+// the built-in test accounts below are used instead; they protect nothing and exist only for trying the app offline.
 const SESSION_KEY = 'cleancare-session';
 const SESSION_DAYS = 7;
-// Passwords are kept only as SHA-256(id + ':' + password). Sign-in details for testing are in the README.
+// Local mode only (no database configured): passwords kept as SHA-256(id + ':' + password); the test password is
+// CleanCare@2026. Never reuse it for a real Supabase account: the real accounts are made by the team (README).
 const ACCOUNTS = [
   { id: 'admin', role: 'admin', name: 'Municipal Officer', email: 'admin@cleancare.test', phone: '9000000001',
     hash: '848d09a388a62fedacb0ad3f6c629b4e2085b0e3f5d8e6ed91863825f7266e4d' },
@@ -1179,10 +1180,20 @@ async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+// Thrown when the password is right but the team hasn't set up this account's role yet
+class NoProfileError extends Error {}
 const authService = {
   // Resolves to the account's public details, or null when the email/phone and password don't match
   async signIn(identifier, password) {
     const id = identifier.trim().toLowerCase();
+    if (cloud) {
+      const { data, error } = await cloud.auth.signInWithPassword({ email: id, password });
+      if (error) { if (error.status === 400 || /invalid/i.test(error.message)) return null; throw error; }
+      const { data: p, error: pErr } = await cloud.from('profiles').select('role, name, clinic, collector_id').eq('user_id', data.user.id).maybeSingle();
+      if (pErr) throw pErr;
+      if (!p) { await cloud.auth.signOut(); throw new NoProfileError(); }
+      return { id: data.user.id, role: p.role, name: p.name, ...(p.clinic && { clinic: p.clinic }), ...(p.collector_id && { collectorId: p.collector_id }) };
+    }
     const phone = normPhone(id);
     const acc = ACCOUNTS.find((a) => a.email === id || (phone && a.phone === phone));
     if (!acc || (await sha256(acc.id + ':' + password)) !== acc.hash) return null;
@@ -1214,7 +1225,8 @@ const myTabs = me ? ROLE_TABS[me.role] : [];
 const DEMO = !!(session && session.demo);
 const DEMO_STORE_KEY = 'cleancare-demo-data';
 // Signing out also clears this device's working choices, so the next person starts fresh (language and theme stay)
-function signOut() {
+async function signOut() {
+  if (typeof cloud !== 'undefined' && cloud) await cloud.auth.signOut().catch(() => {});
   [SESSION_KEY, ROLE_KEY, CLINIC_KEY, COLLECTOR_KEY, VEHICLE_KEY, FACILITY_KEY]
     .forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
   location.reload();
@@ -1227,7 +1239,7 @@ const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 
 
 // Shown in About and used to fetch fresh text files. Bump with each release of the web app (also the two
 // "?v=" in the page head); the Android app has its own version.
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 const APP_UPDATED = '2026-11-20';
 const STORE_KEY = DEMO ? DEMO_STORE_KEY : 'bmw-demo-v3'; // v3: sample mis-sorts and redemptions (v2: 10 clinics, event history)
 const CLINIC_KEY = 'cleancare-clinic';
@@ -1526,9 +1538,13 @@ function refreshSoon() {
 
 async function startCloud() {
   setSync('off', 'sync.connecting', 'sync.connectingSub');
+  // The app's own sign-in marker must match a real Supabase session; if that has gone (signed out elsewhere,
+  // expired), sign in again rather than show a database that now answers nothing
+  const { data: auth } = await cloud.auth.getSession();
+  if (!auth.session) return signOut();
   try {
     [db.bags, db.redemptions] = await Promise.all([fetchBags(), fetchRedemptions()]);
-    if (!db.bags.length) await cloudReset();
+    if (!db.bags.length && me.role === 'admin') await cloudReset();
     dataReady = true;
     setSync('ok', 'sync.live', 'sync.liveSub');
   } catch (e) {
@@ -2021,9 +2037,11 @@ async function askAI(payload, ctrl = new AbortController()) {
   if (!AI_ENDPOINT) throw new Error('No AI endpoint configured');
   const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
   try {
+    // A signed-in person's token goes along, so the server can tell who is asking (Reset Demo is admin-only)
+    const token = cloud ? (await cloud.auth.getSession()).data.session?.access_token : null;
     const res = await fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: CFG.supabaseAnonKey },
+      headers: { 'Content-Type': 'application/json', apikey: CFG.supabaseAnonKey, ...(token && { Authorization: `Bearer ${token}` }) },
       body: JSON.stringify({ ...payload, lang: langMeta(lang).en }),
       signal: ctrl.signal,
     });
@@ -3633,12 +3651,13 @@ $('authForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = $('authId').value.trim();
   const pw = $('authPw').value;
-  const badId = !(isEmail(id) || normPhone(id));
+  // Real accounts sign in by email; mobile numbers work only with the built-in test accounts (local mode)
+  const badId = !(isEmail(id) || (!cloud && normPhone(id)));
   const badPw = !badId && pw.length < 6;
   $('authId').setAttribute('aria-invalid', String(badId));
   $('authPw').setAttribute('aria-invalid', String(badPw));
   if (badId || badPw) {
-    showMsg($('authMsg'), 'err', t(badId ? 'auth.err.id' : 'auth.err.password'));
+    showMsg($('authMsg'), 'err', t(badId ? (cloud ? 'auth.err.emailOnly' : 'auth.err.id') : 'auth.err.password'));
     (badId ? $('authId') : $('authPw')).focus();
     return;
   }
@@ -3650,10 +3669,10 @@ $('authForm').addEventListener('submit', async (e) => {
   try {
     user = await authService.signIn(id, pw);
     if (user) { startSession(user); location.reload(); return; }
-  } catch (err) { console.error(err); failed = true; }
+  } catch (err) { console.error(err); failed = err instanceof NoProfileError ? 'auth.err.noProfile' : 'auth.err.failed'; }
   btn.disabled = false;
   setText(btn.firstElementChild, 'auth.submit');
-  showMsg($('authMsg'), 'err', t(failed ? 'auth.err.failed' : 'auth.err.wrong'));
+  showMsg($('authMsg'), 'err', t(failed || 'auth.err.wrong'));
   $('authPw').value = '';
   $('authPw').focus();
 });
@@ -3824,6 +3843,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('menu
 $('menuLogout').addEventListener('click', DEMO ? exitDemo : signOut);
 // Resetting shared data is for admins only; on this-device-only data anyone may
 $('resetBtn').hidden = $('menuReset').hidden = !(!cloud || (me && me.role === 'admin'));
+// Real accounts sign in by email only, so the form says so (local mode keeps "email or mobile number")
+if (cloud) { $('authId').dataset.i18nPh = 'auth.emailPh'; $('authId').closest('label').querySelector('[data-i18n]').dataset.i18n = 'auth.emailLabel'; }
 
 buildLangMenus();
 applyI18n();

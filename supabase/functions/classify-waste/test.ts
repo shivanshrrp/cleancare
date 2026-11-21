@@ -10,6 +10,13 @@ let script: Array<{ status: number; body: unknown; delay?: number }> = [];
 const realFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
+  if (url === "https://db.test/auth/v1/user") { // who owns this token
+    const tok = (init?.headers as Record<string, string>).Authorization;
+    return tok === "Bearer eyADMIN" ? new Response(JSON.stringify({ id: "u-admin" })) : tok === "Bearer eyCLINIC" ? new Response(JSON.stringify({ id: "u-clinic" })) : new Response("{}", { status: 401 });
+  }
+  if (url.startsWith("https://db.test/rest/v1/profiles")) {
+    return new Response(JSON.stringify(url.includes("u-admin") ? [{ role: "admin" }] : [{ role: "clinic" }]));
+  }
   if (url.startsWith("https://db.test/")) {
     dbCalls.push(`${init?.method} ${url.slice(24)} ${(init?.headers as Record<string, string>).Prefer}`);
     return new Response(init?.method === "POST" && url.endsWith("redemptions") ? init.body as string : "", { status: dbStatus });
@@ -33,8 +40,8 @@ const gemini = (obj: unknown) => ({ status: 200, body: { candidates: [{ content:
 
 await import("./index.ts");
 let ip = 0; // each call gets its own client IP, so the suite stays under the per-IP rate limit
-const post = (body: unknown, origin = "http://localhost:8765") =>
-  realFetch("http://localhost:8000", { method: "POST", headers: { origin, "content-type": "application/json", "x-forwarded-for": `10.0.0.${++ip}` }, body: JSON.stringify(body) })
+const post = (body: unknown, origin = "http://localhost:8765", token = (body as { task?: string }).task === "reset" ? "Bearer eyADMIN" : "") =>
+  realFetch("http://localhost:8000", { method: "POST", headers: { origin, "content-type": "application/json", "x-forwarded-for": `10.0.0.${++ip}`, ...(token && { authorization: token }) }, body: JSON.stringify(body) })
     .then(async (r) => ({ status: r.status, json: await r.json() }));
 const assert = (ok: unknown, what: string) => { if (!ok) throw new Error("FAILED: " + what); console.log("ok  " + what); };
 
@@ -120,5 +127,8 @@ assert(r.json.ai.ok && r.json.ai.via === "Gemini API" && r.json.services.length 
 vertexUp = true;
 r = await post({ task: "health" });
 assert(r.json.ai.via === "Vertex AI" && r.json.ai.ok, "health: Vertex AI answers first when up");
+// Reset Demo is admin-only, checked on the server
+assert((await post({ task: "reset", bags: [], redemptions: [] }, undefined, "Bearer eyCLINIC")).status === 403, "reset: a clinic account is refused");
+assert((await post({ task: "reset", bags: [], redemptions: [] }, undefined, "")).status === 403, "reset: no sign-in is refused");
 console.log("all checks passed");
 Deno.exit(0);
